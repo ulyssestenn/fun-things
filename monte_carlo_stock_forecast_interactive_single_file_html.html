@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Monte Carlo Stock Forecast — Interactive</title>
+<style>
+  :root{
+    --bg:#0e1420;--panel:#121a2a;--ink:#e7eefc;--muted:#9fb0d0;--accent:#f4c44e;--ok:#6ad18d;--warn:#ff6b6b;--grid:#223253;
+    --shadow:0 10px 30px rgba(0,0,0,.35);--radius:18px
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Inter,"Helvetica Neue",Arial}
+  .wrap{max-width:1200px;margin:22px auto;padding:12px}
+  h1{margin:0 0 6px;font-size:28px}
+  p.lead{margin:0 0 16px;color:var(--muted)}
+  .grid{display:grid;grid-template-columns:1.2fr .8fr;gap:18px}
+  .card{background:var(--panel);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
+  .row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+  label{font-size:13px;color:var(--muted)}
+  input,button{border:1px solid var(--grid);background:#0c1320;color:var(--ink);padding:10px 12px;border-radius:12px}
+  input[type=number]{width:110px}
+  input[type=range]{width:200px}
+  button{cursor:pointer}
+  button.primary{background:var(--accent);border-color:#8f6b00;color:#1b1200}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  canvas{display:block;width:100%;height:auto;border:1px solid var(--grid);border-radius:16px;background:#0a1020}
+  .small{font-size:12px;color:var(--muted)}
+  .hr{height:1px;background:var(--grid);margin:12px 0;border-radius:1px}
+  .stat{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .stat>div{background:#0c1320;border:1px solid var(--grid);border-radius:12px;padding:10px}
+  .legend{display:flex;gap:14px;color:var(--muted);font-size:13px;margin-top:6px}
+  .dot{width:10px;height:10px;border-radius:50%}
+  .green{background:var(--ok)}
+  .gold{background:var(--accent)}
+  .red{background:var(--warn)}
+  svg{width:100%;height:260px;display:block;border:1px solid var(--grid);border-radius:16px;background:#0a1020}
+  @media(max-width:980px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Monte Carlo Stock Forecast</h1>
+  <p class="lead">Simulate many possible price paths using a geometric Brownian motion. Watch the <span class="mono">fan chart</span> percentiles and the <span class="mono">distribution of ending prices</span> emerge as runs accumulate.</p>
+
+  <div class="grid">
+    <section class="card">
+      <canvas id="paths" width="860" height="460" aria-label="Simulated price paths"></canvas>
+      <div class="legend">
+        <div class="dot gold"></div> Median path
+        <div class="dot green"></div> 25–75% band
+        <div class="dot red"></div> 5–95% band
+      </div>
+      <div class="hr"></div>
+      <svg id="hist" role="img" aria-label="Histogram of terminal prices"></svg>
+      <div class="small">Histogram of terminal (final) simulated prices. Vertical dashed line = starting price.</div>
+    </section>
+
+    <aside class="card">
+      <div class="row">
+        <button id="run" class="primary">Run 1,000 paths</button>
+        <button id="add100">+100</button>
+        <button id="reset">Reset</button>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <label>S₀ <input id="s0" type="number" step="1" value="100" class="mono"></label>
+        <label>μ (drift) <input id="mu" type="number" step="0.01" value="0.08" class="mono"></label>
+        <label>σ (vol) <input id="sigma" type="number" step="0.01" value="0.25" class="mono"></label>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <label>Horizon (years) <input id="years" type="number" step="0.25" value="1" class="mono"></label>
+        <label>Steps <input id="steps" type="number" step="10" value="252" class="mono"></label>
+        <label>Seed <input id="seed" type="number" value="12345" class="mono"></label>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <label>VaR threshold <input id="var" type="number" step="1" value="80" class="mono"></label>
+        <span class="small">(Probability price ≤ threshold)</span>
+      </div>
+      <div class="hr"></div>
+      <div class="stat">
+        <div>
+          <div>Paths simulated</div>
+          <div id="pathsCount" class="mono">0</div>
+        </div>
+        <div>
+          <div>Pr[ S(T) ≤ threshold ]</div>
+          <div id="risk" class="mono">–</div>
+        </div>
+        <div>
+          <div>Median S(T)</div>
+          <div id="medST" class="mono">–</div>
+        </div>
+        <div>
+          <div>Mean S(T)</div>
+          <div id="meanST" class="mono">–</div>
+        </div>
+      </div>
+      <div class="hr"></div>
+      <div class="small">Model: dS = μ S dt + σ S dW. Discretization (Euler–Maruyama): S<sub>t+Δ</sub> = S<sub>t</sub> · exp[(μ − ½σ²)Δ + σ√Δ · Z], with Z ~ N(0,1).</div>
+    </aside>
+  </div>
+</div>
+
+<script>
+  // ---- Deterministic PRNG + Box–Muller for N(0,1) ----
+  function LCG(seed){ let m=0x80000000,a=1103515245,c=12345; let s=(seed>>>0)||1; return ()=>{ s=(a*s+c)%m; return s/m; }; }
+  function gaussian01(rng){ // Box–Muller
+    let u=0,v=0; while(u===0) u=rng(); while(v===0) v=rng();
+    return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+  }
+
+  // ---- Elements ----
+  const cvs = document.getElementById('paths');
+  const ctx = cvs.getContext('2d');
+  const histSVG = document.getElementById('hist');
+  const ui = {
+    run: document.getElementById('run'), add100: document.getElementById('add100'), reset: document.getElementById('reset'),
+    s0: document.getElementById('s0'), mu: document.getElementById('mu'), sigma: document.getElementById('sigma'), years: document.getElementById('years'), steps: document.getElementById('steps'), seed: document.getElementById('seed'),
+    var: document.getElementById('var'),
+    pathsCount: document.getElementById('pathsCount'), risk: document.getElementById('risk'), medST: document.getElementById('medST'), meanST: document.getElementById('meanST')
+  };
+
+  // ---- Simulation state ----
+  let rng = LCG(Number(ui.seed.value));
+  let paths=[], terminal=[]; // paths: Float32Array per path; terminal: numbers
+
+  function reset(){
+    rng = LCG(Number(ui.seed.value));
+    paths.length=0; terminal.length=0;
+    drawPaths([]); drawHist([]); updateStats();
+  }
+
+  ui.reset.addEventListener('click', reset);
+
+  function simulate(nAdd){
+    const S0 = Number(ui.s0.value), mu = Number(ui.mu.value), sig = Number(ui.sigma.value);
+    const years = Number(ui.years.value), steps = Math.max(2, Number(ui.steps.value)|0);
+    const dt = years/steps, drift = (mu - 0.5*sig*sig)*dt, vol = sig*Math.sqrt(dt);
+
+    for(let k=0;k<nAdd;k++){
+      const arr = new Float32Array(steps+1);
+      arr[0]=S0; let s=S0;
+      for(let i=1;i<=steps;i++){
+        const z = gaussian01(rng);
+        s = s * Math.exp(drift + vol*z);
+        arr[i]=s;
+      }
+      paths.push(arr); terminal.push(s);
+    }
+    drawPaths(paths); drawHist(terminal); updateStats();
+  }
+
+  ui.run.addEventListener('click', ()=> simulate(1000));
+  ui.add100.addEventListener('click', ()=> simulate(100));
+
+  // ---- Drawing: price paths + fan percentiles ----
+  function percentile(sortedArr, p){ if(sortedArr.length===0) return NaN; const idx=(p*(sortedArr.length-1)); const lo=Math.floor(idx), hi=Math.ceil(idx); if(lo===hi) return sortedArr[lo]; const w=idx-lo; return sortedArr[lo]*(1-w)+sortedArr[hi]*w; }
+
+  function drawPaths(allPaths){
+    const W=cvs.width, H=cvs.height; ctx.clearRect(0,0,W,H);
+    // axes
+    ctx.strokeStyle='#223253'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(50,H-40); ctx.lineTo(W-20,H-40); ctx.moveTo(50,20); ctx.lineTo(50,H-40); ctx.stroke();
+    ctx.fillStyle='#9fb0d0'; ctx.font='12px system-ui'; ctx.fillText('Time →', W-80, H-20);
+
+    if(allPaths.length===0){ return; }
+
+    const steps = allPaths[0].length-1; const S0=Number(ui.s0.value);
+    // y-scale from min/max across percentiles to keep stable
+    const perStep = []; // arrays of s at each step
+    for(let i=0;i<=steps;i++){ perStep[i]=[]; }
+    for(const p of allPaths){ for(let i=0;i<=steps;i++){ perStep[i].push(p[i]); } }
+    for(let i=0;i<=steps;i++){ perStep[i].sort((a,b)=>a-b); }
+
+    const p05 = perStep.map(a=>percentile(a,0.05));
+    const p25 = perStep.map(a=>percentile(a,0.25));
+    const p50 = perStep.map(a=>percentile(a,0.50));
+    const p75 = perStep.map(a=>percentile(a,0.75));
+    const p95 = perStep.map(a=>percentile(a,0.95));
+
+    const minY = Math.min(...p05), maxY = Math.max(...p95);
+    const left=50, right=W-20, top=20, bottom=H-40;
+    const X = i => left + (i/steps)*(right-left);
+    const Y = s => bottom - ( (s-minY)/(maxY-minY) )*(bottom-top);
+
+    // bands (5-95 in red, 25-75 in green)
+    function fillBand(a,b, color){ ctx.beginPath(); ctx.moveTo(X(0),Y(a[0])); for(let i=1;i<=steps;i++){ ctx.lineTo(X(i),Y(a[i])); } for(let i=steps;i>=0;i--){ ctx.lineTo(X(i),Y(b[i])); } ctx.closePath(); ctx.globalAlpha=.18; ctx.fillStyle=color; ctx.fill(); ctx.globalAlpha=1; }
+    fillBand(p05,p95,'#ff6b6b');
+    fillBand(p25,p75,'#6ad18d');
+
+    // median line
+    ctx.strokeStyle='#f4c44e'; ctx.lineWidth=2.5; ctx.beginPath(); ctx.moveTo(X(0),Y(p50[0])); for(let i=1;i<=steps;i++){ ctx.lineTo(X(i),Y(p50[i])); } ctx.stroke();
+
+    // thin sample of individual paths for texture
+    const show = Math.min(60, allPaths.length);
+    ctx.strokeStyle='rgba(231,238,252,0.22)'; ctx.lineWidth=1;
+    for(let k=0;k<show;k++){
+      const p = allPaths[(k*Math.floor(allPaths.length/show))|0];
+      ctx.beginPath(); ctx.moveTo(X(0),Y(p[0]));
+      for(let i=1;i<=steps;i++){ ctx.lineTo(X(i),Y(p[i])); }
+      ctx.stroke();
+    }
+
+    // y-axis labels
+    ctx.fillStyle='#9fb0d0'; ctx.font='12px system-ui';
+    ctx.fillText(minY.toFixed(2), 6, bottom);
+    ctx.fillText(((minY+maxY)/2).toFixed(2), 6, (bottom+top)/2);
+    ctx.fillText(maxY.toFixed(2), 6, top+8);
+  }
+
+  // ---- Histogram of terminal prices ----
+  function drawHist(values){
+    const W=histSVG.clientWidth||800, H=260; histSVG.setAttribute('viewBox',`0 0 ${W} ${H}`); while(histSVG.firstChild) histSVG.removeChild(histSVG.firstChild);
+    // frame
+    const frame = document.createElementNS('http://www.w3.org/2000/svg','rect'); frame.setAttribute('x','40'); frame.setAttribute('y','16'); frame.setAttribute('width', W-60); frame.setAttribute('height', H-48); frame.setAttribute('rx','12'); frame.setAttribute('fill','#0a1020'); frame.setAttribute('stroke','#223253'); histSVG.appendChild(frame);
+
+    if(values.length===0) return;
+
+    const nbin = 30; const minV = Math.min(...values), maxV = Math.max(...values);
+    const bins = new Array(nbin).fill(0);
+    const w = (maxV-minV)||1;
+    for(const v of values){ let idx = Math.floor((v-minV)/w*nbin); if(idx===nbin) idx=nbin-1; bins[idx]++; }
+    const maxCount = Math.max(...bins);
+
+    const left=50, right=W-20, top=24, bottom=H-36;
+    const barW = (right-left)/nbin;
+
+    for(let i=0;i<nbin;i++){
+      const h = (bins[i]/maxCount)*(bottom-top);
+      const rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
+      rect.setAttribute('x', left + i*barW + 1);
+      rect.setAttribute('y', bottom - h);
+      rect.setAttribute('width', Math.max(1, barW-2));
+      rect.setAttribute('height', h);
+      rect.setAttribute('fill', '#76e1a1');
+      rect.setAttribute('opacity','.8');
+      histSVG.appendChild(rect);
+    }
+
+    // start price line
+    const S0 = Number(ui.s0.value);
+    const xS0 = left + ((S0-minV)/((maxV-minV)||1))*(right-left);
+    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1',xS0); line.setAttribute('x2',xS0); line.setAttribute('y1',top); line.setAttribute('y2',bottom);
+    line.setAttribute('stroke','#f4c44e'); line.setAttribute('stroke-dasharray','6 6'); line.setAttribute('stroke-width','2');
+    histSVG.appendChild(line);
+
+    // labels
+    const mk = (x,txt)=>{ const t=document.createElementNS('http://www.w3.org/2000/svg','text'); t.setAttribute('x',x); t.setAttribute('y',H-10); t.setAttribute('fill','#9fb0d0'); t.setAttribute('font-size','12'); t.setAttribute('text-anchor','middle'); t.textContent=txt; histSVG.appendChild(t); };
+    mk(left, minV.toFixed(2)); mk((left+right)/2, ((minV+maxV)/2).toFixed(2)); mk(right, maxV.toFixed(2));
+  }
+
+  // ---- Stats ----
+  function updateStats(){
+    ui.pathsCount.textContent = String(paths.length);
+    if(terminal.length===0){ ui.risk.textContent='–'; ui.medST.textContent='–'; ui.meanST.textContent='–'; return; }
+    const sorted=[...terminal].sort((a,b)=>a-b);
+    const med = percentile(sorted, .5);
+    const mean = terminal.reduce((a,b)=>a+b,0)/terminal.length;
+    const thr = Number(ui.var.value);
+    let lo = 0, hi = sorted.length-1, pos = sorted.length; // first index > thr
+    while(lo<=hi){ const mid=(lo+hi)>>1; if(sorted[mid] <= thr){ lo=mid+1; } else { pos=mid; hi=mid-1; } }
+    const p = (pos/terminal.length);
+    ui.medST.textContent = med.toFixed(2);
+    ui.meanST.textContent = mean.toFixed(2);
+    ui.risk.textContent = (p*100).toFixed(2) + '%';
+  }
+
+  // ---- Wire up ----
+  ui.seed.addEventListener('change', reset);
+  ui.s0.addEventListener('change', reset);
+  ui.mu.addEventListener('change', reset);
+  ui.sigma.addEventListener('change', reset);
+  ui.years.addEventListener('change', reset);
+  ui.steps.addEventListener('change', reset);
+  ui.var.addEventListener('input', updateStats);
+
+  // initial draw
+  reset();
+</script>
+</body>
+</html>
