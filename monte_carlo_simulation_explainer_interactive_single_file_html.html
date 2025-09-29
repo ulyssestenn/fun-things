@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Monte Carlo Simulation Explainer</title>
+  <style>
+    :root {
+      --bg:#0e1420; /* Ulix navy */
+      --card:#121a2a;
+      --ink:#e7eefc;
+      --muted:#9fb0d0;
+      --accent:#f4c44e; /* gold */
+      --ok:#6ad18d;
+      --warn:#ff6b6b;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 18px;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, Noto Sans, "Apple Color Emoji","Segoe UI Emoji"}
+    .wrap{max-width:1100px;margin:24px auto;padding:12px}
+    h1{font-size:28px;margin:0 0 8px}
+    p.lead{color:var(--muted);margin:0 0 20px}
+    .grid{display:grid;grid-template-columns: 1.1fr .9fr;gap:18px;align-items:start}
+    .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
+    .flex{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+    label{font-size:13px;color:var(--muted)}
+    input,select,button{border:1px solid #223253;background:#0c1320;color:var(--ink);padding:10px 12px;border-radius:12px}
+    button{cursor:pointer;transition:transform .03s ease}
+    button:active{transform:translateY(1px)}
+    button.primary{background:var(--accent);border-color:#8f6b00;color:#1b1200}
+    .stat{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+    .stat div{background:#0c1320;border:1px solid #223253;border-radius:12px;padding:10px}
+    .kbd{border:1px solid #34425e;background:#0f1726;border-radius:8px;padding:2px 6px;font-size:12px}
+    .row{display:flex;gap:10px;flex-wrap:wrap}
+    canvas{display:block;border-radius:16px;border:1px solid #223253;background:#0a1020}
+    .legend{display:flex;gap:16px;margin-top:8px;color:var(--muted);font-size:13px}
+    .dot{width:10px;height:10px;border-radius:50%}
+    .blue{background:var(--ok)}
+    .red{background:var(--warn)}
+    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace}
+    .small{font-size:12px;color:var(--muted)}
+    .hr{height:1px;background:#223253;margin:12px 0;border-radius:1px}
+    .footer{color:#7f90b2;font-size:12px;margin-top:10px}
+    @media (max-width: 920px){ .grid{grid-template-columns:1fr} }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Monte Carlo Simulation — Visual Explainer</h1>
+  <p class="lead">Use randomness to approximate answers when a direct calculation is hard. Watch points drop into a square containing a circle; the share of points that land inside the circle estimates <span class="mono">π</span>.</p>
+
+  <div class="grid">
+    <section class="card">
+      <canvas id="board" width="560" height="560" aria-label="Sampling board"></canvas>
+      <div class="legend">
+        <div class="flex" style="align-items:center"><span class="dot blue"></span> Inside circle</div>
+        <div class="flex" style="align-items:center"><span class="dot red"></span> Outside circle</div>
+        <div>Estimate: <span id="pi" class="mono">–</span></div>
+        <div>Total points: <span id="n" class="mono">0</span></div>
+      </div>
+      <div class="hr"></div>
+      <svg id="chart" width="100%" height="220" role="img" aria-label="Convergence chart"></svg>
+      <div class="small">Convergence: estimate vs. number of points (dashed line = π)</div>
+    </section>
+
+    <aside class="card">
+      <div class="row">
+        <button id="play" class="primary">Start</button>
+        <button id="step">Step 1</button>
+        <button id="reset">Reset</button>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <label>Points/sec <input id="rate" type="range" min="10" max="2000" step="10" value="400"></label>
+        <label>Dot size <input id="dot" type="range" min="1" max="4" step="1" value="2"></label>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <label>Seed <input id="seed" type="number" value="12345" class="mono" style="width:120px"></label>
+        <button id="reseedd">Reseed</button>
+      </div>
+
+      <div class="stat">
+        <div>
+          <div>Inside / Total</div>
+          <div class="mono" id="counts">0 / 0</div>
+        </div>
+        <div>
+          <div>Error |π − est|</div>
+          <div class="mono" id="error">–</div>
+        </div>
+      </div>
+
+      <div class="hr"></div>
+      <h3 style="margin:6px 0 6px">What you're seeing</h3>
+      <ol style="padding-left:18px;margin:8px 0 0">
+        <li>We sample random (x,y) in the square [−1,1]×[−1,1].</li>
+        <li>Mark blue if x²+y² ≤ 1 (inside the circle), red otherwise.</li>
+        <li>The fraction inside ≈ circle area / square area = π·1² / 2² = π/4.</li>
+        <li>Thus, estimate π ≈ 4·(inside/total). More points → better estimate.</li>
+      </ol>
+
+      <div class="hr"></div>
+      <div class="small">Tips: Press <span class="kbd">Space</span> to Start/Pause, <span class="kbd">S</span> to Step, <span class="kbd">R</span> to Reset.</div>
+    </aside>
+  </div>
+
+  <div class="footer">Made as a single‑file demo: save this page as <span class="mono">monte-carlo.html</span> and open in your browser. No build tools required.</div>
+</div>
+
+<script>
+  // ---- Simple deterministic PRNG for reproducibility (LCG) ----
+  function LCG(seed){
+    let m = 0x80000000, a = 1103515245, c = 12345;
+    let state = (seed>>>0) || 1;
+    return function(){ state = (a*state + c) % m; return state/m; };
+  }
+
+  // ---- Canvas setup ----
+  const canvas = document.getElementById('board');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const pad = 20; // padding inside canvas
+  const size = Math.min(W, H) - pad*2; // square drawing area
+  const center = { x: W/2, y: H/2 };
+  const radius = size/2;
+
+  function drawBoard(){
+    ctx.clearRect(0,0,W,H);
+    // square
+    ctx.strokeStyle = '#223253';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(center.x - radius, center.y - radius, size, size);
+    // circle
+    ctx.beginPath();
+    ctx.arc(center.x, center.y, radius, 0, Math.PI*2);
+    ctx.strokeStyle = '#6a89cc';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+  }
+
+  // ---- State ----
+  let rng = LCG(Number(document.getElementById('seed').value));
+  let running = false;
+  let dots = [];
+  let inside = 0;
+
+  const ui = {
+    pi: document.getElementById('pi'),
+    n: document.getElementById('n'),
+    counts: document.getElementById('counts'),
+    error: document.getElementById('error'),
+    rate: document.getElementById('rate'),
+    dot: document.getElementById('dot'),
+    play: document.getElementById('play'),
+    step: document.getElementById('step'),
+    reset: document.getElementById('reset'),
+    seed: document.getElementById('seed'),
+    reseed: document.getElementById('reseedd'),
+    chart: document.getElementById('chart'),
+  };
+
+  // ---- Chart (simple SVG polyline) ----
+  const chart = ui.chart;
+  const chartW = 1000; // virtual width; will scale to container
+  const chartH = 200;
+  chart.setAttribute('viewBox', `0 0 ${chartW} ${chartH}`);
+
+  const estPath = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+  estPath.setAttribute('fill','none');
+  estPath.setAttribute('stroke', '#76e1a1'); // green-ish
+  estPath.setAttribute('stroke-width', '2.2');
+  chart.appendChild(estPath);
+
+  // dashed horizontal line at π
+  const piLine = document.createElementNS('http://www.w3.org/2000/svg','line');
+  piLine.setAttribute('x1','0');
+  piLine.setAttribute('x2', String(chartW));
+  piLine.setAttribute('y1','0');
+  piLine.setAttribute('y2','0');
+  piLine.setAttribute('stroke','#f4c44e');
+  piLine.setAttribute('stroke-dasharray','6 6');
+  piLine.setAttribute('stroke-width','2');
+  chart.appendChild(piLine);
+
+  const estimates = []; // array of {n, est}
+
+  function updateChart(){
+    if(estimates.length === 0){ estPath.setAttribute('points',''); return; }
+    const maxN = estimates[estimates.length-1].n;
+    const padX = 20, padY = 12;
+    const minY = 2.5, maxY = 4; // y-range for π estimate
+
+    const pts = estimates.map(({n, est})=>{
+      const x = padX + (n/maxN) * (chartW - padX*1.5);
+      const y = padY + (1 - (est - minY)/(maxY - minY)) * (chartH - padY*2);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(' ');
+    estPath.setAttribute('points', pts);
+
+    // position π line
+    const yPi = padY + (1 - (Math.PI - minY)/(maxY - minY)) * (chartH - padY*2);
+    piLine.setAttribute('y1', yPi);
+    piLine.setAttribute('y2', yPi);
+  }
+
+  function updateStats(){
+    const n = dots.length;
+    const est = n ? 4 * (inside / n) : NaN;
+    ui.n.textContent = n;
+    ui.counts.textContent = `${inside} / ${n}`;
+    if(n){
+      ui.pi.textContent = est.toFixed(6);
+      ui.error.textContent = Math.abs(Math.PI - est).toExponential(2);
+    } else {
+      ui.pi.textContent = '–';
+      ui.error.textContent = '–';
+    }
+  }
+
+  function samplePoint(){
+    // (x,y) in [-1,1]
+    const xr = rng()*2 - 1;
+    const yr = rng()*2 - 1;
+    const d2 = xr*xr + yr*yr;
+    const inCircle = d2 <= 1;
+
+    // to canvas coords
+    const x = center.x + xr * radius;
+    const y = center.y - yr * radius;
+
+    dots.push({x,y,inCircle});
+    if(inCircle) inside++;
+
+    // draw dot
+    const r = Number(ui.dot.value);
+    ctx.fillStyle = inCircle ? '#6ad18d' : '#ff6b6b';
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI*2);
+    ctx.fill();
+
+    const n = dots.length;
+    const est = 4 * (inside/n);
+    if(n % 5 === 0) { // thin the chart points a bit
+      estimates.push({n, est});
+      updateChart();
+    }
+    if(n % 25 === 0){ updateStats(); }
+  }
+
+  function stepK(k){ for(let i=0;i<k;i++) samplePoint(); updateStats(); }
+
+  // ---- Controls ----
+  ui.play.addEventListener('click', ()=>{ running = !running; ui.play.textContent = running? 'Pause' : 'Start'; });
+  ui.step.addEventListener('click', ()=> stepK(1));
+  ui.reset.addEventListener('click', ()=> reset(true));
+  ui.reseed.addEventListener('click', ()=> { reset(false); rng = LCG(Number(ui.seed.value)||1); });
+
+  document.addEventListener('keydown', (e)=>{
+    if(e.code==='Space'){ running = !running; ui.play.textContent = running? 'Pause' : 'Start'; e.preventDefault(); }
+    if(e.key==='s' || e.key==='S'){ stepK(1); }
+    if(e.key==='r' || e.key==='R'){ reset(true); }
+  });
+
+  function reset(clearSeedToo){
+    if(clearSeedToo){ /* keep seed */ }
+    running = false; ui.play.textContent='Start';
+    dots.length = 0; inside = 0; estimates.length = 0;
+    drawBoard(); updateStats(); updateChart();
+  }
+
+  // ---- Animation loop ----
+  let last=0;
+  function tick(t){
+    const rate = Number(ui.rate.value); // points per second
+    const dt = Math.min(0.1, (t-last)/1000 || 0); // seconds
+    last = t;
+    if(running){
+      const toDo = Math.max(1, Math.floor(rate * dt));
+      stepK(toDo);
+    }
+    requestAnimationFrame(tick);
+  }
+
+  // initial
+  drawBoard(); updateStats(); updateChart();
+  requestAnimationFrame(tick);
+</script>
+</body>
+</html>
