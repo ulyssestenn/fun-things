@@ -86,8 +86,8 @@ h1 {
   display: block;
   width: 320px !important;
   height: 200px !important;
-  image-rendering: pixelated;
   image-rendering: crisp-edges;
+  image-rendering: pixelated;
 }
 
 .touch-controls {
