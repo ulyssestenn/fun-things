@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const { W, H, C, LEVELS, touch, createKurt, BaseScene } = window.KF;
+  const { W, H, C, LEVELS, touch, createKurtPortrait, BaseScene } = window.KF;
 
   function marqueeBulbs(scene, x, y, width, height) {
     for (let px = x + 5; px < x + width - 4; px += 9) {
@@ -42,34 +42,34 @@
       g.lineStyle(1, 0x725866, 1); g.strokeRect(31, 20, 258, 133);
       marqueeBulbs(this, 25, 14, 270, 145);
 
-      this.add.text(160, 31, "ULIX PICTURES PRESENTS", {
+      this.add.text(160, 28, "ULIX PICTURES PRESENTS", {
         fontFamily: "monospace", fontSize: "7px", color: "#e2b45b", letterSpacing: 2,
       }).setOrigin(0.5).setDepth(4);
-      this.add.text(160, 51, "A PIXEL MOTION PICTURE", {
-        fontFamily: "monospace", fontSize: "8px", color: "#b89bc5", letterSpacing: 1,
-      }).setOrigin(0.5).setDepth(4);
-      this.add.text(160, 75, "THE ADVENTURES OF", {
-        fontFamily: "monospace", fontSize: "9px", color: "#f5e7c8",
-      }).setOrigin(0.5).setDepth(4);
-      this.add.text(160, 99, "KURT FANCASTER", {
-        fontFamily: "Georgia, serif", fontSize: "25px", color: "#f5e7c8",
-        fontStyle: "bold", stroke: "#0b0910", strokeThickness: 3,
-      }).setOrigin(0.5).setDepth(4);
-      this.add.text(160, 119, "THRILLS  •  DIGNITY  •  EXCESSIVE ATHLETICISM", {
-        fontFamily: "monospace", fontSize: "5px", color: "#e2b45b",
+      this.add.text(160, 43, "A PIXEL MOTION PICTURE", {
+        fontFamily: "monospace", fontSize: "7px", color: "#b89bc5", letterSpacing: 1,
       }).setOrigin(0.5).setDepth(4);
 
-      this.kurt = this.add.image(160, 151, createKurt(this, "swimmer"))
-        .setScale(1.28)
-        .setOrigin(0.5, 0.88)
+      this.add.text(101, 66, "THE ADVENTURES OF", {
+        fontFamily: "monospace", fontSize: "7px", color: "#f5e7c8",
+      }).setOrigin(0.5).setDepth(4);
+      this.add.text(101, 91, "KURT\nFANCASTER", {
+        align: "center", fontFamily: "Georgia, serif", fontSize: "19px", color: "#f5e7c8",
+        fontStyle: "bold", lineSpacing: -4, stroke: "#0b0910", strokeThickness: 2,
+      }).setOrigin(0.5).setDepth(4);
+      this.add.text(101, 126, "THRILLS • DIGNITY\nEXCESSIVE ATHLETICISM", {
+        align: "center", fontFamily: "monospace", fontSize: "5px", color: "#e2b45b", lineSpacing: 2,
+      }).setOrigin(0.5).setDepth(4);
+
+      this.add.rectangle(225, 112, 86, 90, 0x15111a).setStrokeStyle(1, 0x725866).setDepth(3);
+      this.kurt = this.add.image(225, 154, createKurtPortrait(this, "matinee"))
+        .setOrigin(0.5, 1)
         .setDepth(5);
-      this.tweens.add({ targets: this.kurt, y: 149, duration: 900, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
 
       this.prompt = this.add.text(160, 187, "PRESS ENTER / TAP A", {
         fontFamily: "monospace", fontSize: "8px", color: "#f5e7c8",
       }).setOrigin(0.5).setDepth(5);
       this.tweens.add({ targets: this.prompt, alpha: 0.28, duration: 650, yoyo: true, repeat: -1 });
-      this.addDither();
+      this.addDither(2);
     }
     update() {
       if (this.actionPressed()) {
