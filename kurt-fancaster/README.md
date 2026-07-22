@@ -2,7 +2,7 @@
 
 A free, unofficial, noncommercial cinematic pixel-art anthology game about an impossibly athletic fictional movie star.
 
-The visual direction draws on early-1990s VGA adventure games: crisp integer-scaled pixels, composed illustrated environments, limited palettes, dark outlines, selective dithering, and readable human characters. The game does not copy any existing game's assets, characters, writing, scenes, or interface.
+The visual direction draws on early-1990s VGA adventure games: crisp integer-scaled pixels, composed illustrated environments, limited palettes, dark outlines, selective dithering, theatrical title screens, and readable human characters. The game does not copy any existing game's assets, characters, writing, scenes, or interface.
 
 Each reel is intended to be a different kind of small arcade game, with its own costume, palette, controls, and central mechanic. The shared frame is the projection-room level selector and the recurring character of Kurt Fancaster.
 
@@ -12,9 +12,12 @@ The first playable reel is **The Swimmer**, a pool-hopping suburban yard game:
 
 - Move from pool to pool, where Kurt is safe and restores his Comfort meter.
 - Cross lawns rather than roads.
-- Dodge enthusiastic dogs, roaming cats, lawn mowers, and territorial geese.
+- Dodge animated enthusiastic dogs, roaming cats, lawn mowers, and territorial geese.
+- Pass through illustrated backyards filled with patio furniture, grills, flower beds, clotheslines, sprinklers, trees, and other period-style details.
 - Reach the finish pool at the top of the neighborhood.
 - Play with keyboard or touch controls.
+
+Kurt now has distinct standing, walking, swimming, stumbling, and victory poses. Hazards use small two-frame animations, pool entry creates a splash, and the title and projection-room scenes have been expanded into more cinematic VGA-style compositions.
 
 The reel selector also includes non-playable placeholders for an acrobatic privateer platformer and a top-down noir pursuit game, demonstrating that the project is structured as an anthology rather than a single scrolling platformer.
 
@@ -28,7 +31,7 @@ This version deliberately uses plain HTML, CSS, JavaScript, and Phaser from a pi
 
 - `index.html`: page shell and accessible touch controls
 - `styles.css`: responsive integer-scaled presentation and control styling
-- `game.js`: shared game data, input, procedural sprites, and base scene utilities
+- `game.js`: shared game data, input, procedural sprite frames, animations, and base scene utilities
 - `scenes.js`: cinematic title and projection-room scenes
 - `swimmer.js`: the first playable reel and game initialization
 
