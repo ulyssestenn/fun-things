@@ -6,7 +6,8 @@
   const STEP = 16;
   const C = {
     black: 0x0b0910, ink: 0x17131d, cream: 0xf5e7c8, gold: 0xe2b45b,
-    skin: 0xd89b68, skinDark: 0x9e6547, hair: 0x24191b, white: 0xf2eee1,
+    skinLight: 0xf0bc84, skin: 0xd98d5b, skinDark: 0x9f593b, skinDeep: 0x5f3027,
+    hair: 0x24191b, hairLight: 0x704126, eye: 0x4d8fc6, white: 0xf2eee1,
     blue: 0x2e6f9c, deepBlue: 0x17364a, water: 0x3e9fba, waterLight: 0x8ad9d8,
     lawn: 0x5d8549, lawnLight: 0x789b55, lawnDark: 0x365b38,
     hedge: 0x254d35, hedgeLight: 0x4e7444, fence: 0xc8aa76, fenceDark: 0x7f674b,
@@ -17,6 +18,10 @@
   };
 
   const COSTUMES = {
+    matinee: {
+      id: "matinee", label: "Matinee Idol", trunks: C.deepBlue,
+      shirt: C.cream, jacket: C.fence, tie: C.black, hat: null,
+    },
     swimmer: { id: "swimmer", label: "Swimmer", trunks: C.blue, shirt: null, hat: null },
     pirate: { id: "pirate", label: "Privateer", trunks: C.black, shirt: C.white, hat: C.red },
     noir: { id: "noir", label: "Noir", trunks: C.black, shirt: C.gray, hat: C.black },
@@ -66,6 +71,42 @@
     return key;
   }
 
+  function fillRects(g, color, rectangles) {
+    g.fillStyle(color, 1);
+    rectangles.forEach(([x, y, width, height]) => g.fillRect(x, y, width, height));
+  }
+
+  function drawKurtFace(g) {
+    // High swept hair, square jaw, heavy brows, blue eyes, long nose, and cleft chin.
+    fillRects(g, C.hair, [
+      [8, 1, 13, 2], [6, 3, 17, 3], [5, 6, 5, 6], [20, 5, 3, 8], [8, 5, 13, 3],
+    ]);
+    fillRects(g, C.hairLight, [
+      [10, 2, 5, 1], [16, 3, 5, 1], [7, 5, 4, 1], [13, 5, 4, 1], [19, 7, 3, 1],
+    ]);
+
+    fillRects(g, C.skinDeep, [
+      [7, 8, 15, 9], [8, 16, 13, 3], [6, 11, 3, 5], [21, 10, 2, 5],
+    ]);
+    fillRects(g, C.skinDark, [
+      [8, 8, 13, 8], [9, 16, 11, 2], [7, 12, 3, 3],
+    ]);
+    fillRects(g, C.skin, [
+      [10, 8, 10, 7], [9, 11, 3, 5], [10, 15, 9, 2],
+    ]);
+    fillRects(g, C.skinLight, [
+      [11, 8, 5, 3], [10, 12, 4, 3], [11, 16, 4, 1],
+    ]);
+
+    fillRects(g, C.hair, [[10, 10, 4, 1], [17, 10, 4, 1]]);
+    fillRects(g, C.eye, [[11, 11, 2, 1], [18, 11, 2, 1]]);
+    fillRects(g, C.black, [[13, 11, 1, 1], [20, 11, 1, 1]]);
+    fillRects(g, C.skinDeep, [[15, 11, 2, 5], [16, 15, 3, 1]]);
+    fillRects(g, C.black, [[12, 16, 7, 1]]);
+    fillRects(g, C.skinLight, [[14, 17, 3, 1]]);
+    fillRects(g, C.skinDeep, [[15, 18, 2, 1]]);
+  }
+
   function drawKurtFrame(g, costume, pose) {
     const leftStep = pose === "step-a";
     const rightStep = pose === "step-b";
@@ -73,101 +114,141 @@
     const victory = pose === "victory";
     const stumble = pose === "stumble";
 
-    g.fillStyle(C.black, 0.32);
-    g.fillRect(swimming ? 3 : 6, 38, swimming ? 24 : 18, 3);
+    fillRects(g, C.black, [[swimming ? 3 : 6, 39, swimming ? 24 : 18, 2]]);
+
+    drawKurtFace(g);
 
     if (costume.hat) {
-      g.fillStyle(costume.hat, 1);
-      g.fillRect(7, 0, 14, 3);
-      g.fillRect(5, 3, 18, 3);
+      fillRects(g, costume.hat, [[7, 0, 14, 3], [5, 3, 18, 3]]);
+      fillRects(g, C.black, [[6, 6, 17, 1]]);
     }
 
-    g.fillStyle(C.hair, 1);
-    g.fillRect(8, 2, 11, 4);
-    g.fillRect(6, 5, 3, 7);
-    g.fillRect(18, 4, 3, 4);
-
-    g.fillStyle(C.skinDark, 1);
-    g.fillRect(7, 6, 14, 12);
-    g.fillStyle(C.skin, 1);
-    g.fillRect(9, 6, 11, 10);
-    g.fillRect(6, 10, 3, 5);
-
-    g.fillStyle(C.black, 1);
-    g.fillRect(11, 9, 2, 1);
-    g.fillRect(17, 9, 2, 1);
-    g.fillRect(19, 13, 3, 1);
-    g.fillStyle(C.white, 1);
-    g.fillRect(14, 14, 5, 1);
+    fillRects(g, C.skinDeep, [[11, 18, 9, 5]]);
+    fillRects(g, C.skin, [[12, 18, 7, 4]]);
+    fillRects(g, C.skinLight, [[13, 18, 3, 3]]);
 
     if (victory) {
-      g.fillStyle(C.skinDark, 1);
-      g.fillRect(4, 10, 4, 12);
-      g.fillRect(22, 10, 4, 12);
-      g.fillStyle(C.skin, 1);
-      g.fillRect(5, 6, 3, 13);
-      g.fillRect(22, 6, 3, 13);
-      g.fillRect(4, 5, 4, 3);
-      g.fillRect(22, 5, 4, 3);
+      fillRects(g, C.skinDeep, [[4, 8, 4, 14], [22, 8, 4, 14]]);
+      fillRects(g, C.skin, [[5, 6, 3, 13], [22, 6, 3, 13], [4, 5, 4, 3], [22, 5, 4, 3]]);
+      fillRects(g, C.skinLight, [[6, 7, 1, 8], [23, 7, 1, 8]]);
     } else if (swimming) {
-      const armY = pose === "swim-a" ? 20 : 23;
-      g.fillStyle(C.skinDark, 1);
-      g.fillRect(2, armY, 9, 4);
-      g.fillRect(19, armY, 9, 4);
-      g.fillStyle(C.skin, 1);
-      g.fillRect(1, armY + 1, 9, 3);
-      g.fillRect(20, armY + 1, 9, 3);
+      const armY = pose === "swim-a" ? 22 : 24;
+      fillRects(g, C.skinDeep, [[2, armY, 9, 4], [19, armY, 9, 4]]);
+      fillRects(g, C.skin, [[1, armY + 1, 9, 3], [20, armY + 1, 9, 3]]);
+      fillRects(g, C.skinLight, [[2, armY + 1, 4, 1], [24, armY + 1, 4, 1]]);
     } else if (stumble) {
-      g.fillStyle(C.skinDark, 1);
-      g.fillRect(3, 18, 9, 4);
-      g.fillRect(19, 22, 8, 4);
-      g.fillStyle(C.skin, 1);
-      g.fillRect(2, 19, 9, 3);
-      g.fillRect(20, 23, 7, 3);
+      fillRects(g, C.skinDeep, [[3, 20, 9, 4], [19, 23, 8, 4]]);
+      fillRects(g, C.skin, [[2, 21, 9, 3], [20, 24, 7, 3]]);
     } else {
-      g.fillStyle(C.skinDark, 1);
-      g.fillRect(leftStep ? 3 : 5, 18, 5, 12);
-      g.fillRect(rightStep ? 22 : 20, 18, 5, 12);
-      g.fillStyle(C.skin, 1);
-      g.fillRect(leftStep ? 3 : 6, 19, 4, 10);
-      g.fillRect(rightStep ? 23 : 20, 19, 4, 10);
+      fillRects(g, C.skinDeep, [
+        [leftStep ? 3 : 5, 21, 5, 11], [rightStep ? 22 : 20, 21, 5, 11],
+      ]);
+      fillRects(g, C.skin, [
+        [leftStep ? 3 : 6, 22, 4, 9], [rightStep ? 23 : 20, 22, 4, 9],
+      ]);
+      fillRects(g, C.skinLight, [
+        [leftStep ? 4 : 7, 22, 1, 6], [rightStep ? 24 : 21, 22, 1, 6],
+      ]);
     }
 
     if (costume.shirt) {
-      g.fillStyle(costume.shirt, 1);
-      g.fillRect(9, 17, 11, 11);
-      g.fillRect(7, 18, 15, 4);
+      fillRects(g, C.skinDeep, [[8, 20, 14, 10], [6, 21, 4, 4], [20, 21, 4, 4]]);
+      fillRects(g, costume.shirt, [[9, 20, 12, 9], [7, 21, 16, 4]]);
+      fillRects(g, C.white, [[11, 21, 3, 5]]);
+      if (costume.tie) fillRects(g, costume.tie, [[15, 21, 2, 7]]);
     } else {
-      g.fillStyle(C.skinDark, 1);
-      g.fillRect(10, 17, 10, 11);
-      g.fillStyle(C.skin, 1);
-      g.fillRect(11, 17, 8, 9);
-      g.fillStyle(C.cream, 0.55);
-      g.fillRect(13, 18, 1, 6);
+      fillRects(g, C.skinDeep, [[8, 20, 14, 10], [6, 21, 4, 4], [20, 21, 4, 4]]);
+      fillRects(g, C.skin, [[9, 20, 12, 9], [8, 21, 4, 4], [19, 21, 4, 4]]);
+      fillRects(g, C.skinLight, [[11, 21, 5, 4], [10, 25, 4, 2]]);
+      fillRects(g, C.skinDeep, [[15, 22, 1, 6]]);
     }
 
-    g.fillStyle(costume.trunks, 1);
-    g.fillRect(9, 27, 12, 5);
-    g.fillStyle(C.deepBlue, 1);
-    g.fillRect(10, 31, 4, 2);
-    g.fillRect(17, 31, 4, 2);
+    fillRects(g, C.skinDeep, [[8, 28, 14, 2]]);
+    fillRects(g, costume.trunks, [[9, 29, 12, 5]]);
+    fillRects(g, C.deepBlue, [[10, 32, 4, 2], [17, 32, 4, 2]]);
 
     if (swimming) {
-      g.fillStyle(C.waterLight, 0.7);
-      g.fillRect(5, 34, 20, 2);
-      g.fillRect(8, 37, 14, 1);
+      fillRects(g, C.waterLight, [[4, 35, 22, 2], [8, 38, 14, 1]]);
+      fillRects(g, C.white, [[6, 35, 5, 1], [18, 35, 4, 1]]);
       return;
     }
 
-    g.fillStyle(C.skinDark, 1);
-    g.fillRect(leftStep ? 7 : 9, 33, 5, leftStep ? 7 : 6);
-    g.fillRect(rightStep ? 19 : 17, 33, 5, rightStep ? 7 : 6);
-    g.fillStyle(C.skin, 1);
-    g.fillRect(leftStep ? 8 : 10, 33, 4, leftStep ? 6 : 5);
-    g.fillRect(rightStep ? 19 : 17, 33, 4, rightStep ? 6 : 5);
-    g.fillStyle(C.brown, 1);
-    g.fillRect(leftStep ? 6 : 9, leftStep ? 39 : 38, 7, 2);
-    g.fillRect(rightStep ? 18 : 17, rightStep ? 39 : 38, 7, 2);
+    fillRects(g, C.skinDeep, [
+      [leftStep ? 7 : 9, 34, 5, leftStep ? 7 : 6],
+      [rightStep ? 19 : 17, 34, 5, rightStep ? 7 : 6],
+    ]);
+    fillRects(g, C.skin, [
+      [leftStep ? 8 : 10, 34, 4, leftStep ? 6 : 5],
+      [rightStep ? 19 : 17, 34, 4, rightStep ? 6 : 5],
+    ]);
+    fillRects(g, C.skinLight, [
+      [leftStep ? 9 : 11, 34, 1, 4], [rightStep ? 20 : 18, 34, 1, 4],
+    ]);
+    fillRects(g, C.brown, [
+      [leftStep ? 6 : 9, leftStep ? 40 : 39, 7, 2],
+      [rightStep ? 18 : 17, rightStep ? 40 : 39, 7, 2],
+    ]);
+  }
+
+  function drawKurtPortrait(g, costume) {
+    // A separate low-resolution bust, inspired by early Sierra portrait screens.
+    fillRects(g, C.hair, [
+      [22, 2, 32, 4], [17, 6, 43, 6], [14, 12, 47, 8],
+      [12, 20, 12, 20], [55, 17, 9, 25], [20, 17, 39, 8],
+    ]);
+    fillRects(g, C.hairLight, [
+      [25, 3, 12, 2], [41, 5, 12, 2], [19, 8, 11, 3], [33, 10, 14, 3],
+      [50, 12, 9, 3], [16, 16, 9, 3], [24, 18, 13, 2], [48, 19, 9, 2],
+    ]);
+    fillRects(g, C.black, [[17, 13, 7, 7], [55, 13, 7, 7]]);
+
+    fillRects(g, C.skinDeep, [
+      [18, 23, 43, 29], [21, 51, 37, 11], [26, 61, 27, 7],
+      [14, 32, 8, 16], [58, 31, 7, 16],
+    ]);
+    fillRects(g, C.skinDark, [
+      [21, 22, 36, 29], [23, 50, 33, 10], [27, 60, 25, 6],
+      [16, 34, 7, 12], [57, 33, 6, 12],
+    ]);
+    fillRects(g, C.skin, [
+      [25, 23, 29, 25], [23, 31, 10, 20], [27, 48, 26, 11], [30, 58, 19, 6],
+    ]);
+    fillRects(g, C.skinLight, [
+      [28, 24, 13, 9], [26, 34, 10, 11], [29, 49, 10, 6], [31, 59, 8, 3],
+    ]);
+
+    fillRects(g, C.hair, [[25, 32, 12, 3], [45, 31, 12, 3]]);
+    fillRects(g, C.black, [[25, 35, 12, 2], [45, 34, 12, 2]]);
+    fillRects(g, C.eye, [[29, 35, 5, 2], [48, 34, 5, 2]]);
+    fillRects(g, C.white, [[30, 35, 2, 1], [49, 34, 2, 1]]);
+    fillRects(g, C.black, [[32, 35, 2, 2], [51, 34, 2, 2]]);
+
+    fillRects(g, C.skinDeep, [[39, 34, 5, 16], [42, 47, 7, 3]]);
+    fillRects(g, C.skinLight, [[38, 35, 3, 10]]);
+    fillRects(g, C.black, [[31, 52, 21, 2]]);
+    fillRects(g, C.skinDeep, [[34, 55, 15, 2], [39, 61, 5, 2]]);
+    fillRects(g, C.skinLight, [[36, 57, 10, 2]]);
+
+    fillRects(g, C.skinDeep, [[29, 64, 24, 13]]);
+    fillRects(g, C.skin, [[32, 64, 18, 12]]);
+    fillRects(g, C.skinLight, [[35, 65, 7, 8]]);
+
+    if (costume.jacket) {
+      fillRects(g, C.skinDeep, [[4, 76, 68, 8], [10, 71, 20, 8], [50, 71, 20, 8]]);
+      fillRects(g, costume.jacket, [[6, 75, 29, 9], [45, 75, 29, 9], [12, 70, 18, 8], [50, 70, 18, 8]]);
+      fillRects(g, costume.shirt, [[31, 72, 18, 12], [27, 75, 10, 9], [45, 75, 10, 9]]);
+      fillRects(g, C.white, [[34, 73, 5, 10]]);
+      fillRects(g, costume.tie || C.black, [[40, 74, 4, 10]]);
+      fillRects(g, C.fenceDark, [[15, 74, 12, 2], [53, 74, 12, 2]]);
+    } else if (costume.shirt) {
+      fillRects(g, C.skinDeep, [[4, 76, 68, 8], [10, 71, 20, 8], [50, 71, 20, 8]]);
+      fillRects(g, costume.shirt, [[6, 75, 68, 9], [14, 70, 17, 8], [49, 70, 17, 8]]);
+    } else {
+      fillRects(g, C.skinDeep, [[4, 76, 68, 8], [10, 71, 20, 8], [50, 71, 20, 8]]);
+      fillRects(g, C.skin, [[6, 76, 66, 8], [13, 72, 18, 7], [49, 72, 18, 7]]);
+      fillRects(g, C.skinLight, [[18, 74, 13, 5], [49, 74, 9, 5]]);
+      fillRects(g, C.skinDeep, [[39, 72, 2, 12]]);
+    }
   }
 
   function createKurtTextures(scene, costumeId) {
@@ -183,6 +264,11 @@
 
   function createKurt(scene, costumeId) {
     return createKurtTextures(scene, costumeId).idle;
+  }
+
+  function createKurtPortrait(scene, costumeId = "matinee") {
+    const costume = COSTUMES[costumeId] || COSTUMES.matinee;
+    return makeTexture(scene, `kurt-portrait-${costume.id}`, 80, 84, (g) => drawKurtPortrait(g, costume));
   }
 
   function ensureAnimation(scene, key, frames, frameRate) {
@@ -271,6 +357,6 @@
 
   window.KF = {
     W, H, STEP, C, LEVELS, touch,
-    createKurt, createKurtTextures, createHazardTextures, BaseScene,
+    createKurt, createKurtTextures, createKurtPortrait, createHazardTextures, BaseScene,
   };
 })();
