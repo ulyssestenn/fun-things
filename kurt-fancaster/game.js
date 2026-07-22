@@ -344,7 +344,8 @@
       return false;
     }
     addDither(depth = 1000) {
-      const g = this.add.graphics().setDepth(depth).setAlpha(0.04);
+      const safeDepth = Math.min(depth, 6);
+      const g = this.add.graphics().setDepth(safeDepth).setAlpha(0.04);
       g.fillStyle(C.cream, 1);
       for (let y = 1; y < H; y += 4) {
         for (let x = y % 8 === 1 ? 1 : 3; x < W; x += 8) g.fillRect(x, y, 1, 1);
