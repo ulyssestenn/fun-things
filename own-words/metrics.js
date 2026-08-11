@@ -4,16 +4,23 @@
     balanced: { min: 40, ideal: 50, max: 60 },
     thorough: { min: 65, ideal: 72, max: 82 }
   };
-
+  const HARD_CHAR_CAP = 20000;
   const TOKEN_RE = /[\p{L}\p{N}]+(?:['’][\p{L}\p{N}]+)*|[^\s]/gu;
 
+  function safeText(text) {
+    if (typeof text !== 'string' || text.length > HARD_CHAR_CAP) return false;
+    if (window.OwnWordsLimits) return window.OwnWordsLimits.inspect(text).ok;
+    return true;
+  }
+
   function tokenize(text) {
-    return (text.match(TOKEN_RE) || []).map(token => token.toLocaleLowerCase());
+    if (!safeText(text || '')) return [];
+    return ((text || '').match(TOKEN_RE) || []).map(token => token.toLocaleLowerCase());
   }
 
   function ngramCounts(tokens, n) {
     const counts = new Map();
-    if (tokens.length < n) return counts;
+    if (!Number.isInteger(n) || n < 1 || tokens.length < n) return counts;
     for (let i = 0; i <= tokens.length - n; i++) {
       const key = tokens.slice(i, i + n).join('\u241f');
       counts.set(key, (counts.get(key) || 0) + 1);
@@ -84,10 +91,11 @@
 
   function bandCoverageFromCandidates(text, candidates, bands = 10) {
     if (!text || !candidates || !candidates.length) return null;
-    const active = candidates.filter(c => !c.reverted);
+    const active = candidates.slice(0, 500).filter(c => !c.reverted);
     if (!active.length) return 0;
     const hit = new Set();
     for (const c of active) {
+      if (!Number.isFinite(c.start) || !Number.isFinite(c.end)) continue;
       const startBand = Math.min(bands - 1, Math.max(0, Math.floor((c.start / Math.max(1, text.length)) * bands)));
       const endBand = Math.min(bands - 1, Math.max(0, Math.floor(((Math.max(c.start, c.end - 1)) / Math.max(1, text.length)) * bands)));
       for (let band = startBand; band <= endBand; band++) hit.add(band);
@@ -127,7 +135,32 @@
     return 'in target';
   }
 
+  function limitedResult(level, reason = 'input limit') {
+    const target = TARGETS[level] || TARGETS.balanced;
+    return {
+      limited: true,
+      reason,
+      depth: 0,
+      label: 'Unavailable',
+      target,
+      targetStatus: 'not calculated',
+      originalTokens: 0,
+      revisedTokens: 0,
+      tokenTurnover: 0,
+      turnoverMethod: 'not calculated',
+      trigramDisruption: 0,
+      fivegramDisruption: 0,
+      coverage: 0,
+      coverageBands: 0,
+      structuralEdits: 0,
+      formula: '30% token turnover + 25% 3-token disruption + 30% 5-token disruption + 15% change coverage'
+    };
+  }
+
   function scoreRewrite(original, revised, options = {}) {
+    const level = options.level || 'balanced';
+    if (!safeText(original || '') || !safeText(revised || '')) return limitedResult(level);
+
     const originalTokens = tokenize(original || '');
     const revisedTokens = tokenize(revised || '');
     const turnover = tokenTurnover(originalTokens, revisedTokens);
@@ -145,12 +178,12 @@
       0.15 * coverage
     ));
 
-    const active = (options.candidates || []).filter(c => !c.reverted);
+    const active = (options.candidates || []).slice(0, 500).filter(c => !c.reverted);
     const structuralEdits = active.filter(c => c.type === 'structure').length;
-    const level = options.level || 'balanced';
     const target = TARGETS[level] || TARGETS.balanced;
 
     return {
+      limited: false,
       depth: Math.max(0, Math.min(100, depth)),
       label: labelForDepth(depth),
       target,
