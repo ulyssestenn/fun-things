@@ -10,6 +10,7 @@
   <title>Own Words — Own your words.</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="metrics.css">
+  <link rel="stylesheet" href="surface.css">
 </head>
 <body>
 <div class="shell">
@@ -50,7 +51,21 @@
           <div class="calc"><span>Turnover method</span><b class="method" id="calcMethod">—</b><small>Falls back for unusually long passages</small></div>
         </div>
         <div class="formula"><span>Composite formula</span><code id="calcFormula">—</code></div>
-        <p class="calc-note">A higher score means more of the token path and local token neighborhoods have changed. It does not establish authorship and does not prove that any particular provenance signal has been removed.</p>
+
+        <div class="calc-section-head"><span>Surface profile</span><small>Diagnostic only · not included in Rewrite Depth yet</small></div>
+        <div class="calc-grid">
+          <div class="calc"><span>Surface divergence</span><b id="calcSurface">0</b><small>Composite surface-profile change, 0–100</small></div>
+          <div class="calc"><span>Function-word distribution</span><b id="calcFunction">0%</b><small>Jensen–Shannon divergence across common function words</small></div>
+          <div class="calc"><span>Sentence-length shape</span><b id="calcSentence">0%</b><small>Divergence across coarse sentence-length bins</small></div>
+          <div class="calc"><span>Punctuation profile</span><b id="calcPunctuation">0%</b><small>Change in dash, colon, semicolon, question, and exclamation rates</small></div>
+          <div class="calc"><span>Pronoun / register</span><b id="calcPronoun">0%</b><small>First-person and second-person distribution change</small></div>
+          <div class="calc"><span>Very short sentences</span><b class="method" id="calcShort">0% → 0%</b><small>Share of sentences containing five words or fewer</small></div>
+          <div class="calc"><span>Em dashes / 1k words</span><b class="method" id="calcDash">0.0 → 0.0</b><small>Original → working copy</small></div>
+          <div class="calc"><span>Colons / 1k words</span><b class="method" id="calcColon">0.0 → 0.0</b><small>Original → working copy</small></div>
+        </div>
+        <div class="formula"><span>Surface formula</span><code id="calcSurfaceFormula">—</code></div>
+        <div class="rhetorical-line"><span>Rhetorical families represented</span><b id="calcFamilies">0</b><small id="calcFamilyList">—</small></div>
+        <p class="calc-note">Surface divergence and rhetorical-family counts are diagnostics. They are intentionally not folded into Rewrite Depth until benchmark results justify a weighting. Higher values describe greater re-expression; they do not establish authorship or prove that any provenance signal has been removed.</p>
       </div>
     </details>
 
