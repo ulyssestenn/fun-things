@@ -19,3 +19,11 @@ The composite score is currently:
 The tokenizer is deliberately transparent and model-neutral: words, numbers, contractions, and punctuation. These are **proxy tokens**, not Claude's private tokenizer. Rewrite depth is a descriptive measure of re-expression, not a watermark detector and not proof that any provenance signal has been removed.
 
 The Light, Balanced, and Thorough modes use target rewrite-depth bands of approximately 20–35, 40–60, and 65–82 respectively. The engine stops adding available suggestions when it reaches the target neighborhood or exhausts appropriate candidates.
+
+## Rhetorical grammar
+
+The observed prose corpus is also organized into a small model-neutral rhetorical grammar. `grammar.js` currently defines 21 discourse families, including correction/reversal, priority/ranking, constraints, causal explanation, mechanism/evidence, counterargument, qualification, contrast/tradeoff, case splits, practical implications, summaries, deciding questions, failure modes, overlooked points, personal observations, old-to-new shifts, definition/reframing, distinctions, enumeration, uncertainty, and discourse transitions.
+
+Candidates can carry an explicit family tag, and older corpus rules are conservatively classified from their matched wording. Word-level substitutions are left unclassified. The rewrite selector rewards both document dispersion and rhetorical-family diversity, so a passage is less likely to receive several near-duplicate edits that all perform the same discourse move when equally strong alternatives from other families are available.
+
+The family system is about writing structure, not authorship attribution. It does not identify a model and is not a detector.
