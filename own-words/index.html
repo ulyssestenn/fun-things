@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Own Words is a private, local-first writing tool that helps you rework machine-assisted prose into language that sounds like you.">
+  <meta name="theme-color" content="#f4f1ea">
+  <title>Own Words — Own your words.</title>
+  <style>
+    :root {
+      --paper: #f4f1ea;
+      --surface: #fbfaf7;
+      --ink: #181816;
+      --muted: #6f6d66;
+      --line: #d8d4ca;
+      --line-dark: #b9b4aa;
+      --accent: #234a63;
+      --accent-soft: #dbe7ec;
+      --mark: #e9dfb9;
+      --mark-hover: #ddcf94;
+      --success: #355b43;
+      --shadow: 0 18px 50px rgba(24, 24, 22, 0.06);
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button, textarea, input { font: inherit; }
+    button { -webkit-tap-highlight-color: transparent; }
+
+    .shell {
+      width: min(1180px, calc(100% - 36px));
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 76px;
+      border-bottom: 1px solid rgba(24, 24, 22, 0.10);
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 9px;
+      color: var(--ink);
+      text-decoration: none;
+      letter-spacing: -0.02em;
+      font-weight: 700;
+    }
+
+    .brand-mark {
+      width: 11px;
+      height: 11px;
+      border: 2px solid var(--ink);
+      border-radius: 50%;
+      display: inline-block;
+      position: relative;
+      top: 1px;
+    }
+
+    .privacy-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      letter-spacing: 0.02em;
+    }
+
+    .privacy-dot {
+      width: 7px;
+      height: 7px;
+      background: var(--success);
+      border-radius: 50%;
+    }
+
+    .hero {
+      padding: 76px 0 38px;
+      max-width: 820px;
+    }
+
+    .eyebrow {
+      margin: 0 0 18px;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.13em;
+      font-size: 0.72rem;
+      font-weight: 750;
+    }
+
+    h1 {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(3rem, 7vw, 6.6rem);
+      line-height: 0.91;
+      letter-spacing: -0.055em;
+      font-weight: 400;
+      margin: 0;
+    }
+
+    .tagline {
+      margin: 20px 0 0;
+      font-size: clamp(1.18rem, 2vw, 1.55rem);
+      letter-spacing: -0.025em;
+      color: #42413d;
+    }
+
+    .lede {
+      max-width: 660px;
+      margin: 16px 0 0;
+      color: var(--muted);
+      font-size: 0.98rem;
+      line-height: 1.65;
+    }
+
+    .workspace {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      margin-bottom: 28px;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255,255,255,0.45);
+    }
+
+    .segmented {
+      display: inline-flex;
+      padding: 3px;
+      gap: 2px;
+      background: #ebe8e1;
+      border-radius: 10px;
+    }
+
+    .segmented button {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      border-radius: 8px;
+      padding: 7px 12px;
+      cursor: pointer;
+      font-size: 0.80rem;
+      font-weight: 650;
+    }
+
+    .segmented button.active {
+      background: var(--surface);
+      color: var(--ink);
+      box-shadow: 0 1px 5px rgba(0,0,0,0.08);
+    }
+
+    .toolbar-note {
+      color: var(--muted);
+      font-size: 0.76rem;
+    }
+
+    .panes {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: 500px;
+    }
+
+    .pane {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .pane + .pane { border-left: 1px solid var(--line); }
+
+    .pane-head {
+      min-height: 54px;
+      padding: 15px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .pane-title {
+      font-size: 0.78rem;
+      font-weight: 760;
+      text-transform: uppercase;
+      letter-spacing: 0.075em;
+    }
+
+    .small-action {
+      appearance: none;
+      border: 0;
+      background: transparent;
+      color: var(--accent);
+      font-size: 0.76rem;
+      cursor: pointer;
+      padding: 5px 0;
+    }
+
+    .small-action:hover { text-decoration: underline; }
+
+    textarea {
+      width: 100%;
+      flex: 1;
+      min-height: 390px;
+      border: 0;
+      resize: none;
+      outline: none;
+      background: transparent;
+      color: var(--ink);
+      padding: 24px;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 1.05rem;
+      line-height: 1.72;
+    }
+
+    textarea::placeholder { color: #aaa69e; }
+
+    .output-wrap {
+      flex: 1;
+      min-height: 390px;
+      padding: 24px;
+      position: relative;
+    }
+
+    .output {
+      min-height: 342px;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 1.05rem;
+      line-height: 1.72;
+    }
+
+    .output.empty {
+      color: #aaa69e;
+      font-style: italic;
+    }
+
+    .change {
+      appearance: none;
+      border: 0;
+      background: var(--mark);
+      color: inherit;
+      padding: 0 2px;
+      margin: 0 -1px;
+      border-radius: 3px;
+      font: inherit;
+      line-height: inherit;
+      cursor: pointer;
+      text-align: left;
+      box-shadow: inset 0 -1px 0 rgba(24,24,22,0.16);
+      transition: background 120ms ease;
+    }
+
+    .change:hover, .change:focus-visible {
+      background: var(--mark-hover);
+      outline: none;
+    }
+
+    .change.reverted {
+      background: transparent;
+      box-shadow: inset 0 -1px 0 var(--line-dark);
+    }
+
+    .edit-area {
+      display: none;
+      width: 100%;
+      min-height: 342px;
+      padding: 0;
+    }
+
+    .pane-foot {
+      min-height: 56px;
+      padding: 12px 18px;
+      border-top: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 0.76rem;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 16px 18px;
+      border-top: 1px solid var(--line);
+      background: rgba(255,255,255,0.45);
+    }
+
+    .btn {
+      appearance: none;
+      border-radius: 10px;
+      border: 1px solid var(--line-dark);
+      background: var(--surface);
+      color: var(--ink);
+      padding: 10px 15px;
+      font-weight: 700;
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: transform 100ms ease, border-color 100ms ease, background 100ms ease;
+    }
+
+    .btn:hover { border-color: #8f8b83; }
+    .btn:active { transform: translateY(1px); }
+    .btn.primary { background: var(--ink); color: #fff; border-color: var(--ink); }
+    .btn.primary:hover { background: #2a2a27; }
+    .btn[disabled] { opacity: 0.42; cursor: not-allowed; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: rgba(251,250,247,0.72);
+      margin-bottom: 72px;
+    }
+
+    .stat {
+      padding: 20px 22px;
+      min-height: 94px;
+    }
+
+    .stat + .stat { border-left: 1px solid var(--line); }
+    .stat-value { font-family: Georgia, serif; font-size: 1.7rem; letter-spacing: -0.03em; }
+    .stat-label { margin-top: 5px; color: var(--muted); font-size: 0.74rem; }
+
+    .about {
+      display: grid;
+      grid-template-columns: 1fr 1.3fr;
+      gap: 80px;
+      padding: 12px 0 84px;
+      border-top: 1px solid rgba(24,24,22,0.12);
+    }
+
+    .about h2 {
+      font-family: Georgia, serif;
+      font-size: clamp(2rem, 4vw, 3.4rem);
+      font-weight: 400;
+      line-height: 1.03;
+      letter-spacing: -0.045em;
+      margin: 56px 0 0;
+    }
+
+    .about-copy {
+      padding-top: 56px;
+      color: #4d4b46;
+      line-height: 1.75;
+      font-size: 0.94rem;
+    }
+
+    .about-copy p:first-child { margin-top: 0; }
+    .about-copy strong { color: var(--ink); }
+
+    .principles {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 28px;
+    }
+
+    .principle {
+      border-top: 1px solid var(--line-dark);
+      padding-top: 11px;
+      font-size: 0.78rem;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .principle b {
+      display: block;
+      color: var(--ink);
+      margin-bottom: 3px;
+      font-size: 0.77rem;
+    }
+
+    footer {
+      border-top: 1px solid rgba(24,24,22,0.12);
+      min-height: 90px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+      color: var(--muted);
+      font-size: 0.75rem;
+    }
+
+    footer a { color: var(--ink); }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 24px;
+      transform: translate(-50%, 12px);
+      background: var(--ink);
+      color: white;
+      padding: 10px 14px;
+      border-radius: 9px;
+      font-size: 0.78rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 140ms ease, transform 140ms ease;
+      z-index: 5;
+    }
+
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+    @media (max-width: 820px) {
+      .shell { width: min(100% - 24px, 1180px); }
+      header { min-height: 64px; }
+      .hero { padding-top: 52px; }
+      .panes { grid-template-columns: 1fr; }
+      .pane + .pane { border-left: 0; border-top: 1px solid var(--line); }
+      .pane textarea, .output-wrap { min-height: 320px; }
+      textarea { min-height: 300px; }
+      .output { min-height: 270px; }
+      .edit-area { min-height: 270px; }
+      .about { grid-template-columns: 1fr; gap: 0; }
+      .about h2 { margin-top: 44px; }
+      .about-copy { padding-top: 24px; }
+      .stats { margin-bottom: 50px; }
+    }
+
+    @media (max-width: 560px) {
+      h1 { font-size: 3.45rem; }
+      .privacy-pill span:last-child { display: none; }
+      .toolbar { align-items: flex-start; }
+      .toolbar-note { width: 100%; }
+      .actions .btn { flex: 1 1 calc(50% - 10px); }
+      .stats { grid-template-columns: 1fr; }
+      .stat + .stat { border-left: 0; border-top: 1px solid var(--line); }
+      .principles { grid-template-columns: 1fr; }
+      footer { align-items: flex-start; flex-direction: column; justify-content: center; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * { scroll-behavior: auto !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <a class="brand" href="./" aria-label="Own Words home">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span>Own Words</span>
+      </a>
+      <div class="privacy-pill" title="This page does not send your text anywhere">
+        <span class="privacy-dot" aria-hidden="true"></span>
+        <span>Local only. Nothing leaves your browser.</span>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <p class="eyebrow">A private rewriting workspace</p>
+        <h1>Own Words.</h1>
+        <p class="tagline">Own your words.</p>
+        <p class="lede">Turn assisted prose into language you would actually choose. Own Words finds clean, reversible edits on your device. You decide what stays.</p>
+      </section>
+
+      <section class="workspace" aria-label="Own Words editor">
+        <div class="toolbar">
+          <div class="segmented" role="group" aria-label="Rewrite intensity">
+            <button type="button" data-level="light">Light</button>
+            <button type="button" data-level="balanced" class="active">Balanced</button>
+            <button type="button" data-level="thorough">Thorough</button>
+          </div>
+          <div class="toolbar-note">Click a highlighted edit for another option. Shift-click to restore the original.</div>
+        </div>
+
+        <div class="panes">
+          <section class="pane" aria-label="Original text">
+            <div class="pane-head">
+              <span class="pane-title">Original</span>
+              <button class="small-action" id="sampleBtn" type="button">Try an example</button>
+            </div>
+            <textarea id="source" spellcheck="true" autocomplete="off" placeholder="Paste or write something here…" aria-label="Original text"></textarea>
+            <div class="pane-foot">
+              <span id="sourceCount">0 words</span>
+              <button class="small-action" id="clearBtn" type="button">Clear</button>
+            </div>
+          </section>
+
+          <section class="pane" aria-label="Revised text">
+            <div class="pane-head">
+              <span class="pane-title">Working copy</span>
+              <button class="small-action" id="editBtn" type="button" disabled>Edit directly</button>
+            </div>
+            <div class="output-wrap">
+              <div id="output" class="output empty" aria-live="polite">Your working copy will appear here.</div>
+              <textarea id="editArea" class="edit-area" spellcheck="true" aria-label="Edit working copy directly"></textarea>
+            </div>
+            <div class="pane-foot">
+              <span id="changeCount">No edits yet</span>
+              <span id="hint">Everything is reversible</span>
+            </div>
+          </section>
+        </div>
+
+        <div class="actions">
+          <button class="btn primary" id="rewriteBtn" type="button">Make it mine</button>
+          <button class="btn" id="anotherBtn" type="button" disabled>Another pass</button>
+          <button class="btn" id="undoAllBtn" type="button" disabled>Restore originals</button>
+          <button class="btn" id="copyBtn" type="button" disabled>Copy</button>
+        </div>
+      </section>
+
+      <section class="stats" aria-label="Edit statistics">
+        <div class="stat">
+          <div class="stat-value" id="statWords">0</div>
+          <div class="stat-label">words in working copy</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="statChanges">0</div>
+          <div class="stat-label">suggested edits</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="statTouched">0%</div>
+          <div class="stat-label">of words touched</div>
+        </div>
+      </section>
+
+      <section class="about">
+        <h2>Keep the judgment human.</h2>
+        <div class="about-copy">
+          <p><strong>Own Words is deliberately not a one-click paraphraser.</strong> It proposes small lexical and phrase-level changes, shows every one, and lets you cycle or reject them. The point is to make the final language yours, not to replace one machine voice with another.</p>
+          <p>Your text is processed entirely in this page. There is no account, server-side rewrite, analytics payload containing your prose, or AI API call. Reload the page and the text is gone.</p>
+          <p>Changing prose can also change statistical signals embedded in machine-generated text, but this tool does not claim to remove or defeat any particular watermark or detector. Those systems differ, and their behavior can change.</p>
+          <div class="principles">
+            <div class="principle"><b>Private</b>Your prose stays on your device.</div>
+            <div class="principle"><b>Visible</b>Every automated edit is marked.</div>
+            <div class="principle"><b>Reversible</b>Nothing is accepted by force.</div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <span>Own Words · a personal open-source experiment</span>
+      <a href="https://github.com/ulyssestenn/fun-things/tree/main/own-words">View source on GitHub</a>
+    </footer>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    (() => {
+      const source = document.getElementById('source');
+      const output = document.getElementById('output');
+      const editArea = document.getElementById('editArea');
+      const rewriteBtn = document.getElementById('rewriteBtn');
+      const anotherBtn = document.getElementById('anotherBtn');
+      const undoAllBtn = document.getElementById('undoAllBtn');
+      const copyBtn = document.getElementById('copyBtn');
+      const editBtn = document.getElementById('editBtn');
+      const sampleBtn = document.getElementById('sampleBtn');
+      const clearBtn = document.getElementById('clearBtn');
+      const sourceCount = document.getElementById('sourceCount');
+      const changeCount = document.getElementById('changeCount');
+      const statWords = document.getElementById('statWords');
+      const statChanges = document.getElementById('statChanges');
+      const statTouched = document.getElementById('statTouched');
+      const toast = document.getElementById('toast');
+
+      let level = 'balanced';
+      let candidates = [];
+      let sourceSnapshot = '';
+      let directEditing = false;
+      let pass = 0;
+
+      const LEVELS = {
+        light: { threshold: 0.34, phrases: true, contractions: false },
+        balanced: { threshold: 0.58, phrases: true, contractions: true },
+        thorough: { threshold: 0.82, phrases: true, contractions: true }
+      };
+
+      // Conservative phrase edits first. These are intentionally plain-English,
+      // not novelty-thesaurus substitutions.
+      const PHRASES = [
+        ['in order to', ['to']],
+        ['due to the fact that', ['because', 'since']],
+        ['for the purpose of', ['to', 'for']],
+        ['at this point in time', ['now', 'at this point']],
+        ['in the event that', ['if']],
+        ['a large number of', ['many', 'numerous']],
+        ['a wide range of', ['many', 'a variety of', 'varied']],
+        ['has the ability to', ['can', 'is able to']],
+        ['have the ability to', ['can', 'are able to']],
+        ['is able to', ['can']],
+        ['are able to', ['can']],
+        ['plays a crucial role in', ['is central to', 'matters greatly to', 'is important to']],
+        ['play a crucial role in', ['are central to', 'matter greatly to', 'are important to']],
+        ['it is important to note that', ['notably,', 'it is worth noting that']],
+        ['it is worth noting that', ['notably,', 'notice that']],
+        ['in today\'s world', ['today']],
+        ['in the modern world', ['today', 'in modern life']],
+        ['on a daily basis', ['daily', 'every day']],
+        ['on a regular basis', ['regularly']],
+        ['in close proximity to', ['near']],
+        ['with regard to', ['about', 'regarding']],
+        ['with respect to', ['about', 'regarding']],
+        ['in relation to', ['about', 'relative to']],
+        ['in addition to', ['besides', 'along with']],
+        ['as a result of', ['because of', 'from']],
+        ['in spite of the fact that', ['although', 'even though']],
+        ['despite the fact that', ['although', 'even though']],
+        ['the vast majority of', ['most']],
+        ['a significant number of', ['many', 'a substantial number of']],
+        ['the reason why', ['the reason', 'why']],
+        ['is indicative of', ['indicates', 'suggests']],
+        ['serves as a reminder that', ['reminds us that', 'shows that']],
+        ['serves to highlight', ['highlights', 'shows']],
+        ['can be seen as', ['can be viewed as', 'is arguably']],
+        ['when it comes to', ['for', 'when considering']],
+        ['from the perspective of', ['from the view of', 'for']],
+        ['the fact that', ['that']],
+        ['in terms of', ['for', 'regarding']],
+        ['at the same time', ['meanwhile', 'still']],
+        ['as a means of', ['to', 'as a way to']]
+      ];
+
+      const WORDS = {
+        additionally: ['also', 'besides'],
+        furthermore: ['also', 'moreover', 'besides'],
+        moreover: ['also', 'furthermore', 'besides'],
+        however: ['but', 'still', 'yet'],
+        therefore: ['so', 'thus', 'accordingly'],
+        thus: ['so', 'therefore'],
+        consequently: ['so', 'as a result'],
+        nevertheless: ['still', 'even so', 'yet'],
+        nonetheless: ['still', 'even so', 'yet'],
+        alternatively: ['instead', 'as another option'],
+        approximately: ['about', 'roughly'],
+        numerous: ['many', 'several'],
+        various: ['several', 'different'],
+        significant: ['major', 'meaningful', 'substantial'],
+        crucial: ['essential', 'critical', 'important'],
+        essential: ['necessary', 'key', 'critical'],
+        important: ['key', 'significant', 'meaningful'],
+        notable: ['striking', 'important', 'remarkable'],
+        substantial: ['large', 'considerable', 'meaningful'],
+        comprehensive: ['complete', 'broad', 'thorough'],
+        robust: ['strong', 'durable', 'reliable'],
+        innovative: ['new', 'inventive', 'original'],
+        unique: ['distinctive', 'unusual', 'singular'],
+        valuable: ['useful', 'worthwhile', 'important'],
+        beneficial: ['helpful', 'useful', 'advantageous'],
+        effective: ['successful', 'useful', 'strong'],
+        efficient: ['streamlined', 'productive', 'economical'],
+        complex: ['complicated', 'intricate'],
+        simple: ['plain', 'straightforward', 'uncomplicated'],
+        utilize: ['use', 'employ'],
+        utilizes: ['uses', 'employs'],
+        utilized: ['used', 'employed'],
+        utilizing: ['using', 'employing'],
+        facilitate: ['help', 'enable', 'support'],
+        facilitates: ['helps', 'enables', 'supports'],
+        facilitated: ['helped', 'enabled', 'supported'],
+        demonstrate: ['show', 'display', 'establish'],
+        demonstrates: ['shows', 'displays', 'establishes'],
+        demonstrated: ['showed', 'displayed', 'established'],
+        indicate: ['show', 'suggest', 'signal'],
+        indicates: ['shows', 'suggests', 'signals'],
+        indicated: ['showed', 'suggested', 'signaled'],
+        highlight: ['show', 'emphasize', 'underscore'],
+        highlights: ['shows', 'emphasizes', 'underscores'],
+        highlighted: ['showed', 'emphasized', 'underscored'],
+        enhance: ['improve', 'strengthen', 'increase'],
+        enhances: ['improves', 'strengthens', 'increases'],
+        enhanced: ['improved', 'strengthened', 'increased'],
+        optimize: ['improve', 'refine'],
+        optimizes: ['improves', 'refines'],
+        leverage: ['use', 'draw on'],
+        leverages: ['uses', 'draws on'],
+        encompass: ['include', 'cover'],
+        encompasses: ['includes', 'covers'],
+        comprise: ['include', 'contain'],
+        comprises: ['includes', 'contains'],
+        enable: ['allow', 'let', 'make possible'],
+        enables: ['allows', 'lets', 'makes possible'],
+        assist: ['help', 'aid'],
+        assists: ['helps', 'aids'],
+        obtain: ['get', 'gain', 'acquire'],
+        obtains: ['gets', 'gains', 'acquires'],
+        require: ['need', 'demand'],
+        requires: ['needs', 'demands'],
+        attempt: ['try', 'effort'],
+        attempts: ['tries', 'efforts'],
+        commence: ['begin', 'start'],
+        commenced: ['began', 'started'],
+        terminate: ['end', 'stop'],
+        terminated: ['ended', 'stopped'],
+        purchase: ['buy', 'acquire'],
+        purchases: ['buys', 'acquires'],
+        provide: ['give', 'offer', 'supply'],
+        provides: ['gives', 'offers', 'supplies'],
+        provided: ['gave', 'offered', 'supplied'],
+        receive: ['get', 'accept'],
+        receives: ['gets', 'accepts'],
+        individuals: ['people', 'persons'],
+        individual: ['person', 'individual'],
+        methodology: ['method', 'approach'],
+        methodologies: ['methods', 'approaches'],
+        functionality: ['function', 'capability'],
+        functionalities: ['functions', 'capabilities'],
+        objective: ['goal', 'aim'],
+        objectives: ['goals', 'aims'],
+        perspective: ['view', 'standpoint'],
+        perspectives: ['views', 'standpoints'],
+        aspect: ['part', 'feature', 'element'],
+        aspects: ['parts', 'features', 'elements'],
+        factors: ['forces', 'elements', 'considerations'],
+        factor: ['force', 'element', 'consideration'],
+        impact: ['effect', 'influence'],
+        impacts: ['effects', 'influences'],
+        implement: ['apply', 'put in place', 'carry out'],
+        implements: ['applies', 'puts in place', 'carries out'],
+        implementation: ['use', 'adoption', 'execution'],
+        address: ['handle', 'tackle', 'deal with'],
+        addresses: ['handles', 'tackles', 'deals with'],
+        ensure: ['make sure', 'secure'],
+        ensures: ['makes sure', 'secures'],
+        maintain: ['keep', 'preserve'],
+        maintains: ['keeps', 'preserves'],
+        sufficient: ['enough', 'adequate'],
+        additional: ['extra', 'further'],
+        primarily: ['mainly', 'chiefly'],
+        particularly: ['especially', 'notably'],
+        generally: ['usually', 'broadly'],
+        typically: ['usually', 'normally'],
+        frequently: ['often', 'regularly'],
+        occasionally: ['sometimes', 'now and then'],
+        ultimately: ['eventually', 'in the end'],
+        currently: ['now', 'at present'],
+        previously: ['earlier', 'before'],
+        subsequently: ['later', 'afterward'],
+        potentially: ['possibly', 'perhaps'],
+        clearly: ['plainly', 'obviously'],
+        extremely: ['very', 'exceptionally'],
+        significantly: ['greatly', 'substantially', 'meaningfully'],
+        increasingly: ['more and more', 'progressively'],
+        fundamentally: ['basically', 'at heart'],
+        effectively: ['in practice', 'successfully'],
+        specifically: ['particularly', 'in particular'],
+        explore: ['examine', 'consider', 'investigate'],
+        explores: ['examines', 'considers', 'investigates'],
+        examining: ['studying', 'considering', 'looking at'],
+        consider: ['weigh', 'examine', 'think about'],
+        considering: ['weighing', 'examining', 'thinking about'],
+        understand: ['grasp', 'see', 'make sense of'],
+        understanding: ['grasp', 'knowledge', 'sense'],
+        challenge: ['problem', 'difficulty', 'test'],
+        challenges: ['problems', 'difficulties', 'tests'],
+        opportunity: ['chance', 'opening', 'possibility'],
+        opportunities: ['chances', 'openings', 'possibilities'],
+        solution: ['answer', 'approach', 'remedy'],
+        solutions: ['answers', 'approaches', 'remedies'],
+        approach: ['method', 'way', 'strategy'],
+        approaches: ['methods', 'ways', 'strategies']
+      };
+
+      const CONTRACTIONS = [
+        ['do not', ["don't"]], ['does not', ["doesn't"]], ['did not', ["didn't"]],
+        ['is not', ["isn't"]], ['are not', ["aren't"]], ['was not', ["wasn't"]], ['were not', ["weren't"]],
+        ['cannot', ["can't"]], ['could not', ["couldn't"]], ['would not', ["wouldn't"]], ['should not', ["shouldn't"]],
+        ['will not', ["won't"]], ['have not', ["haven't"]], ['has not', ["hasn't"]], ['had not', ["hadn't"]],
+        ['it is', ["it's"]], ['that is', ["that's"]], ['there is', ["there's"]], ['they are', ["they're"]],
+        ['we are', ["we're"]], ['you are', ["you're"]], ['I am', ["I'm"]]
+      ];
+
+      const SAMPLE = `Artificial intelligence has the ability to transform a wide range of everyday tasks. However, it is important to note that the technology is most valuable when individuals use it to enhance their own judgment rather than replace it. In order to get better results, users should provide sufficient context, evaluate the response carefully, and maintain control over the final product. This approach enables people to utilize AI efficiently while ensuring that their own perspective remains central.`;
+
+      const countWords = text => (text.trim().match(/\b[\p{L}\p{N}'’_-]+\b/gu) || []).length;
+
+      function hash(str) {
+        let h = 2166136261;
+        for (let i = 0; i < str.length; i++) {
+          h ^= str.charCodeAt(i);
+          h = Math.imul(h, 16777619);
+        }
+        return (h >>> 0) / 4294967295;
+      }
+
+      function preserveCase(original, replacement) {
+        if (!original || !replacement) return replacement;
+        if (original.toUpperCase() === original && /[A-Z]/.test(original)) return replacement.toUpperCase();
+        if (original[0] === original[0].toUpperCase()) return replacement[0].toUpperCase() + replacement.slice(1);
+        return replacement;
+      }
+
+      function overlaps(a, b) {
+        return a.start < b.end && b.start < a.end;
+      }
+
+      function findPhraseCandidates(text, entries, type) {
+        const found = [];
+        for (const [phrase, alternatives] of entries) {
+          const escaped = phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const regex = new RegExp(`\\b${escaped}\\b`, 'gi');
+          let match;
+          while ((match = regex.exec(text)) !== null) {
+            found.push({
+              start: match.index,
+              end: match.index + match[0].length,
+              original: match[0],
+              alternatives: alternatives.map(a => preserveCase(match[0], a)),
+              type
+            });
+          }
+        }
+        return found;
+      }
+
+      function buildCandidates(text) {
+        const config = LEVELS[level];
+        let pool = [];
+
+        if (config.phrases) pool.push(...findPhraseCandidates(text, PHRASES, 'phrase'));
+        if (config.contractions) pool.push(...findPhraseCandidates(text, CONTRACTIONS, 'contraction'));
+
+        const wordRegex = /\b[\p{L}]+\b/gu;
+        let match;
+        while ((match = wordRegex.exec(text)) !== null) {
+          const key = match[0].toLowerCase();
+          if (!WORDS[key]) continue;
+          pool.push({
+            start: match.index,
+            end: match.index + match[0].length,
+            original: match[0],
+            alternatives: WORDS[key].map(a => preserveCase(match[0], a)),
+            type: 'word'
+          });
+        }
+
+        // Prefer longer phrase matches, then fill in word matches that do not overlap.
+        pool.sort((a, b) => (b.end - b.start) - (a.end - a.start) || a.start - b.start);
+        const nonOverlapping = [];
+        for (const candidate of pool) {
+          if (!nonOverlapping.some(existing => overlaps(candidate, existing))) {
+            nonOverlapping.push(candidate);
+          }
+        }
+
+        // Deterministic selection keeps the output stable until the user asks for another pass.
+        const selected = nonOverlapping.filter((c, i) => {
+          const score = hash(`${c.original}|${c.start}|${level}`);
+          return c.type !== 'word' || score < config.threshold;
+        });
+
+        selected.sort((a, b) => a.start - b.start);
+        selected.forEach((c, i) => {
+          c.id = i;
+          c.option = Math.floor(hash(`${c.original}|${c.start}|${pass}`) * c.alternatives.length) % c.alternatives.length;
+          c.reverted = false;
+        });
+        return selected;
+      }
+
+      function escapeHTML(str) {
+        return str.replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
+      }
+
+      function render() {
+        if (!sourceSnapshot) {
+          output.className = 'output empty';
+          output.textContent = 'Your working copy will appear here.';
+          return;
+        }
+
+        let html = '';
+        let cursor = 0;
+        for (const c of candidates) {
+          html += escapeHTML(sourceSnapshot.slice(cursor, c.start));
+          const value = c.reverted ? c.original : c.alternatives[c.option];
+          const cls = c.reverted ? 'change reverted' : 'change';
+          const label = c.reverted ? `Original: ${c.original}. Click for an alternative.` : `Changed from ${c.original}. Click for another option; shift-click to restore.`;
+          html += `<button type="button" class="${cls}" data-id="${c.id}" aria-label="${escapeHTML(label)}">${escapeHTML(value)}</button>`;
+          cursor = c.end;
+        }
+        html += escapeHTML(sourceSnapshot.slice(cursor));
+        output.innerHTML = html;
+        output.className = 'output';
+        updateStats();
+      }
+
+      function flattenOutput() {
+        if (directEditing) return editArea.value;
+        if (!sourceSnapshot) return '';
+        let text = '';
+        let cursor = 0;
+        for (const c of candidates) {
+          text += sourceSnapshot.slice(cursor, c.start);
+          text += c.reverted ? c.original : c.alternatives[c.option];
+          cursor = c.end;
+        }
+        return text + sourceSnapshot.slice(cursor);
+      }
+
+      function updateStats() {
+        const text = flattenOutput();
+        const words = countWords(text);
+        const active = candidates.filter(c => !c.reverted);
+        const touchedWords = active.reduce((sum, c) => sum + Math.max(1, countWords(c.original)), 0);
+        const pct = words ? Math.min(100, Math.round((touchedWords / words) * 100)) : 0;
+
+        statWords.textContent = words.toLocaleString();
+        statChanges.textContent = active.length.toLocaleString();
+        statTouched.textContent = `${pct}%`;
+        changeCount.textContent = active.length ? `${active.length} suggested edit${active.length === 1 ? '' : 's'}` : 'No active edits';
+      }
+
+      function updateSourceCount() {
+        const n = countWords(source.value);
+        sourceCount.textContent = `${n.toLocaleString()} word${n === 1 ? '' : 's'}`;
+      }
+
+      function setEnabled(enabled) {
+        anotherBtn.disabled = !enabled;
+        undoAllBtn.disabled = !enabled;
+        copyBtn.disabled = !enabled;
+        editBtn.disabled = !enabled;
+      }
+
+      function rewrite() {
+        const text = source.value;
+        if (!text.trim()) {
+          showToast('Add some text first.');
+          source.focus();
+          return;
+        }
+        exitDirectEdit(false);
+        sourceSnapshot = text;
+        pass = 0;
+        candidates = buildCandidates(text);
+        render();
+        setEnabled(true);
+        if (!candidates.length) showToast('No safe local edits found. Try a longer passage.');
+      }
+
+      function anotherPass() {
+        if (!sourceSnapshot) return;
+        if (directEditing) exitDirectEdit(true);
+        pass += 1;
+        candidates.forEach(c => {
+          if (!c.reverted && c.alternatives.length > 1) {
+            c.option = (c.option + 1 + (pass % Math.max(1, c.alternatives.length - 1))) % c.alternatives.length;
+          }
+        });
+        render();
+      }
+
+      function restoreAll() {
+        if (directEditing) exitDirectEdit(true);
+        candidates.forEach(c => c.reverted = true);
+        render();
+      }
+
+      async function copyText() {
+        const text = flattenOutput();
+        if (!text) return;
+        try {
+          await navigator.clipboard.writeText(text);
+          showToast('Copied.');
+        } catch {
+          const helper = document.createElement('textarea');
+          helper.value = text;
+          document.body.appendChild(helper);
+          helper.select();
+          document.execCommand('copy');
+          helper.remove();
+          showToast('Copied.');
+        }
+      }
+
+      function enterDirectEdit() {
+        if (!sourceSnapshot || directEditing) return;
+        editArea.value = flattenOutput();
+        output.style.display = 'none';
+        editArea.style.display = 'block';
+        directEditing = true;
+        editBtn.textContent = 'Done editing';
+        editArea.focus();
+        updateStats();
+      }
+
+      function exitDirectEdit(commit) {
+        if (!directEditing) return;
+        if (commit) {
+          sourceSnapshot = editArea.value;
+          candidates = [];
+          output.textContent = sourceSnapshot;
+          output.className = 'output';
+        }
+        editArea.style.display = 'none';
+        output.style.display = 'block';
+        directEditing = false;
+        editBtn.textContent = 'Edit directly';
+        if (commit) {
+          render();
+          changeCount.textContent = 'Manual working copy';
+        }
+      }
+
+      function showToast(message) {
+        toast.textContent = message;
+        toast.classList.add('show');
+        clearTimeout(showToast.timer);
+        showToast.timer = setTimeout(() => toast.classList.remove('show'), 1500);
+      }
+
+      document.querySelectorAll('[data-level]').forEach(button => {
+        button.addEventListener('click', () => {
+          document.querySelectorAll('[data-level]').forEach(b => b.classList.remove('active'));
+          button.classList.add('active');
+          level = button.dataset.level;
+          if (sourceSnapshot && source.value === sourceSnapshot) {
+            pass = 0;
+            candidates = buildCandidates(sourceSnapshot);
+            render();
+          }
+        });
+      });
+
+      output.addEventListener('click', event => {
+        const button = event.target.closest('.change');
+        if (!button) return;
+        const candidate = candidates[Number(button.dataset.id)];
+        if (!candidate) return;
+        if (event.shiftKey) {
+          candidate.reverted = true;
+        } else if (candidate.reverted) {
+          candidate.reverted = false;
+        } else if (candidate.alternatives.length > 1) {
+          candidate.option = (candidate.option + 1) % candidate.alternatives.length;
+        } else {
+          candidate.reverted = true;
+        }
+        render();
+      });
+
+      source.addEventListener('input', () => {
+        updateSourceCount();
+        if (sourceSnapshot && source.value !== sourceSnapshot) {
+          sourceSnapshot = '';
+          candidates = [];
+          directEditing = false;
+          output.style.display = 'block';
+          editArea.style.display = 'none';
+          output.className = 'output empty';
+          output.textContent = 'Text changed. Make a new working copy when you are ready.';
+          setEnabled(false);
+          statWords.textContent = '0';
+          statChanges.textContent = '0';
+          statTouched.textContent = '0%';
+          changeCount.textContent = 'No edits yet';
+        }
+      });
+
+      editArea.addEventListener('input', updateStats);
+      rewriteBtn.addEventListener('click', rewrite);
+      anotherBtn.addEventListener('click', anotherPass);
+      undoAllBtn.addEventListener('click', restoreAll);
+      copyBtn.addEventListener('click', copyText);
+      editBtn.addEventListener('click', () => directEditing ? exitDirectEdit(true) : enterDirectEdit());
+
+      sampleBtn.addEventListener('click', () => {
+        source.value = SAMPLE;
+        updateSourceCount();
+        source.focus();
+      });
+
+      clearBtn.addEventListener('click', () => {
+        source.value = '';
+        sourceSnapshot = '';
+        candidates = [];
+        directEditing = false;
+        output.style.display = 'block';
+        editArea.style.display = 'none';
+        output.className = 'output empty';
+        output.textContent = 'Your working copy will appear here.';
+        setEnabled(false);
+        updateSourceCount();
+        statWords.textContent = '0';
+        statChanges.textContent = '0';
+        statTouched.textContent = '0%';
+        changeCount.textContent = 'No edits yet';
+        source.focus();
+      });
+
+      source.addEventListener('keydown', event => {
+        if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') rewrite();
+      });
+    })();
+  </script>
+</body>
+</html>
