@@ -45,14 +45,52 @@ Do not claim that:
 
 A production detector needs the corresponding secure configuration and tokenizer. Google describes the open repository as a reference/research implementation rather than its production detector configuration.
 
-## Benchmark direction
+## Reference benchmark results
 
-The strongest empirical test for Own Words is against the **open reference watermark**, where the configuration is known. A future benchmark can:
+The research harness in `research/` runs the public 30-key SynthID configuration through Hugging Face's `SynthIDTextWatermarkLogitsProcessor`, generates paired watermarked and unwatermarked continuations from `HuggingFaceTB/SmolLM2-135M-Instruct`, applies Own Words, and then recomputes the reference detector score with the same tokenizer and key configuration. Semantic preservation is checked separately with `sentence-transformers/all-MiniLM-L6-v2`.
 
-1. generate paired watermarked and unwatermarked passages with the reference implementation
-2. record the reference detector score before rewriting
-3. run the same passages through Light, Balanced, and Thorough
-4. record detector score after accepted edits along with Rewrite Depth, token turnover, 5-token disruption, and context-window coverage
-5. compare random/local lexical selection against context-aware selection
+In the expanded 16-prompt benchmark:
 
-That benchmark would tell us whether the model-neutral proxy correlates with lower reference-watermark evidence without pretending to measure Google's private production detector.
+- watermarked originals averaged **0.6139** on the weighted-mean detector
+- matched unwatermarked originals averaged **0.5026**
+- pairwise AUROC for the original texts was **1.000**, confirming that the reference detector had a strong signal in this sample
+- Light averaged **4.8%** five-token disruption and reduced the detector score by **0.0060**
+- Balanced averaged **16.9%** five-token disruption and reduced the detector score by **0.0188**
+- Thorough averaged **34.9%** five-token disruption and reduced the detector score by **0.0403**
+- Thorough retained **0.979** mean semantic cosine
+- none of the watermarked rewrites fell to or below the highest unwatermarked-original score in this pilot
+- the raw correlation between five-token disruption and detector-score reduction was **0.924**
+
+The raw correlation is confounded by edit count: more edits both disrupt more n-grams and lower the reference score. The benchmark therefore includes a stricter fixed-edit placement control.
+
+### Fixed-edit placement control
+
+For each of 16 watermarked passages, the control selects exactly four eligible edits and compares a tightly clustered set with a widely distributed set. It also evaluates 20 deterministic random four-edit subsets per passage, for 320 random variants total.
+
+Results:
+
+- clustered four-edit sets averaged **10.2%** five-token disruption and **0.0114** detector-score reduction
+- spread four-edit sets averaged **13.1%** five-token disruption and **0.0136** detector-score reduction
+- spread placement produced the larger detector reduction in **69%** of paired passages
+- semantic cosine was effectively unchanged: **0.994 clustered vs. 0.995 spread**
+- across the 320 random fixed-size subsets, the within-source correlation between five-token disruption and detector reduction was **0.222**
+- after controlling token turnover, that correlation was **0.233**
+- a source-fixed-effects regression estimated **0.00063 ± 0.00015** detector-score reduction per additional percentage point of five-token disruption, controlling token turnover
+
+This supports context-aware dispersion as a real but modest optimization. It does **not** justify treating five-token disruption as a detector surrogate.
+
+## Current bottleneck and next engineering target
+
+The context-aware selector and the older selector produced identical full-pass rewrites in the benchmark. This is not evidence that ranking is useless. Every benchmark passage exhausted its eligible candidate set before reaching the requested Rewrite Depth target, so both selectors eventually chose the same edits regardless of ranking order.
+
+Candidate availability is therefore the immediate bottleneck. In the 16 watermarked passages, average available/selected edits were approximately:
+
+- Light: **1.4**
+- Balanced: **5.4**
+- Thorough: **12.8**
+
+All 16 passages in every mode ended with `reason: exhausted`, `selected == available`, and `reachedTarget: false`.
+
+The next engineering work should expand **safe phrase-level and structural rewrite coverage** rather than simply increasing the context bonus or lowering semantic-confidence thresholds indiscriminately. Context-aware ranking should remain in place so that, once the candidate pool is rich enough for selection to matter, equally safe edits are preferentially distributed across independent source contexts.
+
+Full benchmark reports, CSV rows, plots, generated examples, and placement-control results are emitted as GitHub Actions artifacts by `.github/workflows/own-words-synthid-benchmark.yml`.
