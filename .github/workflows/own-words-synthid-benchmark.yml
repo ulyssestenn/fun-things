@@ -10,6 +10,7 @@ on:
       - 'own-words/metrics.js'
       - 'own-words/phrases.js'
       - 'own-words/connectives.js'
+      - 'own-words/compressions.js'
       - 'own-words/words*.js'
       - 'own-words/patterns.js'
       - 'own-words/syntax.js'
@@ -46,6 +47,7 @@ jobs:
       - name: Validate research code
         run: |
           node --check own-words/connectives.js
+          node --check own-words/compressions.js
           node --check own-words/syntax.js
           node --check own-words/engine.js
           node --check own-words/app.js
