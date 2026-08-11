@@ -20,6 +20,8 @@ The tokenizer is deliberately transparent and model-neutral: words, numbers, con
 
 The Light, Balanced, and Thorough modes use target rewrite-depth bands of approximately 20–35, 40–60, and 65–82 respectively. The engine stops adding available suggestions when it reaches the target neighborhood or exhausts appropriate candidates.
 
+Thorough mode also loads a separate lower-confidence lexical layer from `words-thorough.js`. These q1 alternatives cover common analytical verbs, adjectives, adverbs, and nouns so long passages have enough candidate density for a visibly deeper pass. Light and Balanced ignore this layer because their quality thresholds remain q3 and q2. Existing higher-confidence word entries are never downgraded or overwritten.
+
 ## Rhetorical grammar
 
 The observed prose corpus is also organized into a small model-neutral rhetorical grammar. `grammar.js` currently defines 21 discourse families, including correction/reversal, priority/ranking, constraints, causal explanation, mechanism/evidence, counterargument, qualification, contrast/tradeoff, case splits, practical implications, summaries, deciding questions, failure modes, overlooked points, personal observations, old-to-new shifts, definition/reframing, distinctions, enumeration, uncertainty, and discourse transitions.
