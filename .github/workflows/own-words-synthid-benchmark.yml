@@ -91,13 +91,23 @@ jobs:
             --csv own-words/research/results/synthid_benchmark_rows.csv \
             --output-dir own-words/research/results
 
-      - name: Analyze entropy-weighted edit targeting
+      - name: Analyze generator-model entropy targeting
         run: |
           python own-words/research/entropy_efficiency.py \
             --generated own-words/research/results/generated.json \
             --rewrites own-words/research/results/rewrites.json \
             --csv own-words/research/results/synthid_benchmark_rows.csv \
             --output-dir own-words/research/results
+
+      - name: Analyze cross-model entropy targeting
+        run: |
+          python own-words/research/entropy_efficiency.py \
+            --generated own-words/research/results/generated.json \
+            --rewrites own-words/research/results/rewrites.json \
+            --csv own-words/research/results/synthid_benchmark_rows.csv \
+            --output-dir own-words/research/results \
+            --surrogate-model distilgpt2 \
+            --label distilgpt2
 
       - name: Analyze fixed-edit placement controls
         run: |
