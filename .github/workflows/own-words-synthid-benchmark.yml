@@ -46,8 +46,9 @@ jobs:
         run: |
           node --check own-words/syntax.js
           node --check own-words/engine.js
+          node --check own-words/app.js
           node --check own-words/research/synthid_rewrite_runner.mjs
-          python -m py_compile own-words/research/synthid_benchmark.py own-words/research/placement_analysis.py own-words/research/transform_efficiency.py
+          python -m py_compile own-words/research/synthid_benchmark.py own-words/research/placement_analysis.py own-words/research/transform_efficiency.py own-words/research/entropy_efficiency.py
 
       - name: Install benchmark dependencies
         run: |
@@ -84,6 +85,14 @@ jobs:
       - name: Analyze single-edit transform efficiency
         run: |
           python own-words/research/transform_efficiency.py \
+            --rewrites own-words/research/results/rewrites.json \
+            --csv own-words/research/results/synthid_benchmark_rows.csv \
+            --output-dir own-words/research/results
+
+      - name: Analyze entropy-weighted edit targeting
+        run: |
+          python own-words/research/entropy_efficiency.py \
+            --generated own-words/research/results/generated.json \
             --rewrites own-words/research/results/rewrites.json \
             --csv own-words/research/results/synthid_benchmark_rows.csv \
             --output-dir own-words/research/results
