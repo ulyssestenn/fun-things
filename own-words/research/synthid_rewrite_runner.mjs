@@ -89,6 +89,44 @@ function rewriteWith(context, record, selector, mode) {
   };
 }
 
+function inferTransformClass(context, candidate) {
+  if (candidate.type === 'word') return 'lexical';
+  if (candidate.type === 'phrase') return 'phrase';
+  if (candidate.type !== 'structure') return candidate.type || 'unknown';
+  const patterns = context.OwnWordsLexicon?.PATTERNS || [];
+  for (const pattern of patterns) {
+    if (!pattern.transformClass || !pattern.re) continue;
+    pattern.re.lastIndex = 0;
+    const match = pattern.re.exec(candidate.original);
+    pattern.re.lastIndex = 0;
+    if (match && match.index === 0 && match[0].length === candidate.original.length) {
+      return pattern.transformClass;
+    }
+  }
+  return 'legacy-structure';
+}
+
+function singleCandidateRewrite(context, record, candidate, index) {
+  const { revised, metrics } = metricsFor(context, record, [candidate], 'thorough');
+  return {
+    id: record.id,
+    prompt: record.prompt,
+    source_type: record.source_type,
+    selector: 'single',
+    mode: `single-${String(index).padStart(2, '0')}`,
+    edit_count: 1,
+    transform_class: inferTransformClass(context, candidate),
+    candidate_type: candidate.type || 'unknown',
+    candidate_family: candidate.family || null,
+    candidate_quality: candidate.q,
+    candidate_span_chars: candidate.end - candidate.start,
+    candidate_original: candidate.original,
+    candidate_alternatives: candidate.alts,
+    metrics,
+    text: revised,
+  };
+}
+
 function clusteredSubset(candidates, k) {
   const ordered = [...candidates].sort((a, b) => a.start - b.start);
   let best = ordered.slice(0, k);
@@ -182,11 +220,18 @@ for (const record of generated.records) {
     rewrites.push(rewriteWith(contextAware, record, 'context', mode));
   }
 
-  // Fixed-edit placement controls isolate whether edit dispersion matters beyond
-  // raw edit count. We use the Thorough candidate set because benchmark passages
-  // have historically exhausted it, making it a conservative candidate pool.
   if (record.source_type === 'watermarked') {
     const pool = contextAware.OwnWordsEngine.findCandidates(record.text, 'thorough');
+
+    // Score individual available edits so we can estimate the empirical
+    // watermark-signal reduction of each transformation class per edit.
+    for (let i = 0; i < Math.min(pool.length, 40); i++) {
+      rewrites.push(singleCandidateRewrite(contextAware, record, pool[i], i));
+    }
+
+    // Fixed-edit placement controls isolate whether edit dispersion matters beyond
+    // raw edit count. We use the Thorough candidate set because benchmark passages
+    // have historically exhausted it, making it a conservative candidate pool.
     const k = 4;
     if (pool.length >= 8) {
       rewrites.push(placementControl(contextAware, record, 'thorough', pool, 'clustered', 0, k));
@@ -204,6 +249,9 @@ const payload = {
   old_engine: oldEnginePath,
   context_engine: contextEnginePath,
   syntax_rules: true,
+  single_candidate_analysis: {
+    max_candidates_per_watermarked_passage: 40,
+  },
   placement_control: {
     edit_count: 4,
     random_subsets_per_eligible_watermarked_passage: 20,
