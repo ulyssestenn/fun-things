@@ -43,11 +43,14 @@
     },
     {
       q:3,
-      re:/the ([^.!?]+?) is the constraint that decides it/gi,
-      build:m=>[
-        `The deciding constraint is ${m[1]}`,
-        `${cap4(m[1])} is the constraint that matters most`
-      ]
+      re:/([^,.!?]+?) is the constraint that decides it/gi,
+      build:m=>{
+        const subject=m[1].trim();
+        return [
+          `The deciding constraint is ${subject}`,
+          `${cap4(subject)} is the constraint that matters most`
+        ];
+      }
     },
     {
       q:3,
@@ -74,9 +77,9 @@
     },
     {
       q:3,
-      re:/three things can ([^—.!?]+?)\s*—\s*([^,]+),\s*([^,]+),\s*and ([^—.!?]+?)\s*—\s*and ([^.!?]+)/gi,
+      re:/three things can ([^—.!?]+?)\s*—\s*(.+?)\s*—\s*and ([^.!?]+)/gi,
       build:m=>[
-        `Three things can ${m[1]}: ${m[2]}, ${m[3]}, and ${m[4]}. ${cap4(m[5])}`
+        `Three things can ${m[1]}: ${m[2]}. ${cap4(m[3])}`
       ]
     }
   );
