@@ -23,7 +23,7 @@
         <section class="pane"><div class="pane-head"><span class="pane-title">Original</span><button class="text-action" id="sample">Try an example</button></div><textarea id="source" placeholder="Paste or write something here…" spellcheck="false" autocomplete="off"></textarea><div class="pane-foot"><span class="source-meta"><span id="sourceCount">0 / 2,500 words</span><span id="limitState" aria-live="polite">2,500-word / 20,000-character max</span></span><button class="text-action" id="clear">Clear</button></div></section>
         <section class="pane"><div class="pane-head"><span class="pane-title">Working copy</span><button class="text-action" id="manualBtn" disabled>Edit directly</button></div><div class="out-wrap"><div id="output" class="output empty">Your working copy will appear here.</div><textarea id="manual" spellcheck="false" autocomplete="off"></textarea></div><div class="pane-foot"><span id="changeCount">No edits yet</span><span>Everything is reversible</span></div></section>
       </div>
-      <div class="actions"><button class="btn primary" id="offer">Offer edits</button><button class="btn" id="another" disabled>Another pass</button><button class="btn" id="restore" disabled>Restore originals</button><button class="btn" id="copy" disabled>Copy</button></div>
+      <div class="actions"><button class="btn primary" id="offer">Offer edits</button><button class="btn" id="another" disabled>Another pass</button><button class="btn" id="restore" disabled>Restore originals</button><button class="btn" id="guide" disabled>Guide my edits</button><button class="btn" id="copy" disabled>Copy</button></div>
     </section>
 
     <section class="stats" aria-label="Rewrite statistics">
@@ -38,7 +38,7 @@
       <div class="calc-body">
         <div class="calc-intro">
           <p><strong>Rewrite depth</strong> measures how extensively the working copy diverges from the original while remaining model-neutral. It is not a watermark detector.</p>
-          <p>The browser uses a transparent proxy tokenizer: words, numbers, contractions, and punctuation. It does not know Claude's private tokenizer, watermark key, or detector.</p>
+          <p>The browser uses a transparent proxy tokenizer: words, numbers, contractions, and punctuation. It does not know any model's private tokenizer, watermark key, or detector.</p>
         </div>
         <div class="calc-grid">
           <div class="calc"><span>Original proxy tokens</span><b id="calcOriginalTokens">0</b></div>
@@ -69,7 +69,7 @@
       </div>
     </details>
 
-    <section class="about"><h2>Keep the judgment human.</h2><div class="about-copy"><p><strong>Own Words is not a one-click paraphraser.</strong> It proposes lexical and structural alternatives, marks every automated change, and leaves the decision to you. The final language should be yours, not merely a second machine's version.</p><p>Everything happens in this page. There is no account, server-side rewrite, database, or AI API call containing your prose. Text processing is capped at 2,500 words and 20,000 characters per passage.</p><p>Rewrite depth measures linguistic re-expression using model-neutral token comparisons. It is descriptive, not a claim to defeat any particular watermark or detector.</p><div class="principles"><div class="principle"><b>Private</b>Your prose stays on your device.</div><div class="principle"><b>Visible</b>Every automated edit is marked.</div><div class="principle"><b>Reversible</b>Nothing is accepted by force.</div></div></div></section>
+    <section class="about"><h2>Keep the judgment human.</h2><div class="about-copy"><p><strong>Own Words is not a one-click paraphraser.</strong> It proposes lexical and structural alternatives, marks every automated change, and leaves the decision to you. The final language should be yours, not merely a second machine's version.</p><p><strong>Guide my edits</strong> is the human half of that workflow. After automatic suggestions, it moves through strategically spaced untouched regions so you can rewrite a word or short phrase yourself. It chooses locations, not language.</p><p>Everything happens in this page. There is no account, server-side rewrite, database, or AI API call containing your prose. Text processing is capped at 2,500 words and 20,000 characters per passage.</p><p>Rewrite depth measures linguistic re-expression using model-neutral token comparisons. It is descriptive, not a claim to defeat any particular watermark or detector.</p><div class="principles"><div class="principle"><b>Private</b>Your prose stays on your device.</div><div class="principle"><b>Visible</b>Every automated edit is marked.</div><div class="principle"><b>Reversible</b>Nothing is accepted by force.</div></div></div></section>
   </main>
   <footer><span>Own Words · a personal open-source experiment</span><a href="https://github.com/ulyssestenn/fun-things/tree/main/own-words">View source on GitHub</a></footer>
 </div>
@@ -91,6 +91,7 @@
   <script src="limits.js"></script>
   <script src="metrics.js"></script>
   <script src="engine.js"></script>
+  <script src="coverage-coach.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
