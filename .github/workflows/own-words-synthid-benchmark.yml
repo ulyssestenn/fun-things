@@ -11,6 +11,7 @@ on:
       - 'own-words/phrases.js'
       - 'own-words/words*.js'
       - 'own-words/patterns.js'
+      - 'own-words/syntax.js'
       - 'own-words/corpus-*.js'
       - '.github/workflows/own-words-synthid-benchmark.yml'
   workflow_dispatch:
@@ -40,6 +41,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+
+      - name: Validate rewrite JavaScript
+        run: |
+          node --check own-words/syntax.js
+          node --check own-words/engine.js
+          node --check own-words/research/synthid_rewrite_runner.mjs
 
       - name: Install benchmark dependencies
         run: |
