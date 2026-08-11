@@ -5,8 +5,15 @@ on:
     branches:
       - agent/own-words-context-disruption
     paths:
-      - 'own-words/**'
+      - 'own-words/research/**'
+      - 'own-words/engine.js'
+      - 'own-words/metrics.js'
+      - 'own-words/phrases.js'
+      - 'own-words/words*.js'
+      - 'own-words/patterns.js'
+      - 'own-words/corpus-*.js'
       - '.github/workflows/own-words-synthid-benchmark.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -45,9 +52,9 @@ jobs:
           mkdir -p own-words/research/results
           python own-words/research/synthid_benchmark.py generate \
             --model HuggingFaceTB/SmolLM2-135M-Instruct \
-            --limit 6 \
-            --min-new-tokens 80 \
-            --max-new-tokens 110 \
+            --limit 16 \
+            --min-new-tokens 140 \
+            --max-new-tokens 160 \
             --output own-words/research/results/generated.json
 
       - name: Run old and context-aware Own Words selectors
