@@ -6,7 +6,7 @@
   const calcOriginalTokens=$('calcOriginalTokens'), calcRevisedTokens=$('calcRevisedTokens'), calcTurnover=$('calcTurnover'), calc3=$('calc3'), calc5=$('calc5'), calcCoverage=$('calcCoverage'), calcStructures=$('calcStructures'), calcMethod=$('calcMethod'), calcFormula=$('calcFormula');
   const calcSurface=$('calcSurface'), calcFunction=$('calcFunction'), calcSentence=$('calcSentence'), calcPunctuation=$('calcPunctuation'), calcPronoun=$('calcPronoun'), calcShort=$('calcShort'), calcDash=$('calcDash'), calcColon=$('calcColon'), calcSurfaceFormula=$('calcSurfaceFormula');
   const calcFamilies=$('calcFamilies'), calcFamilyList=$('calcFamilyList');
-  const {findCandidates,countWords,esc,hash}=window.OwnWordsEngine;
+  const {findCandidates,countWords,esc}=window.OwnWordsEngine;
   const metrics=window.OwnWordsMetrics;
   const limits=window.OwnWordsLimits;
   const grammar=window.OwnWordsGrammar;
@@ -20,7 +20,10 @@
     const status=limits.inspect(text);
     if(!status.ok){say(limits.message(status));source.focus();return}
     leaveManual(false);baseline=text;snapshot=text;pass=0;candidates=findCandidates(text,level);
-    candidates.forEach((c,i)=>{c.id=i;c.choice=hash(`${c.original}|${c.start}|${pass}`)%c.alts.length;c.reverted=false});
+    // The engine orders each already-vetted alternative by model-neutral local
+    // sequence disruption. Show that preferred alternative first; clicking still
+    // cycles through every alternative and shift-click still restores the source.
+    candidates.forEach((c,i)=>{c.id=i;c.choice=0;c.reverted=false});
     render();enable(true);
     if(!candidates.length){changeCount.textContent='No strong local edits found';say(level==='thorough'?'No safe alternatives found in this passage.':'No edits at this level. Try Thorough.')} else say(`${candidates.length} edit${candidates.length===1?'':'s'} offered.`)
   }
