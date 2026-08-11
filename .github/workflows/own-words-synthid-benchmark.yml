@@ -44,9 +44,10 @@ jobs:
         run: |
           mkdir -p own-words/research/results
           python own-words/research/synthid_benchmark.py generate \
-            --limit 12 \
-            --min-new-tokens 120 \
-            --max-new-tokens 180 \
+            --model HuggingFaceTB/SmolLM2-135M-Instruct \
+            --limit 6 \
+            --min-new-tokens 80 \
+            --max-new-tokens 110 \
             --output own-words/research/results/generated.json
 
       - name: Run old and context-aware Own Words selectors
