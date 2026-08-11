@@ -15,6 +15,7 @@ const ownWordsDir = path.resolve(path.dirname(new URL(import.meta.url).pathname)
 const commonScripts = [
   'phrases.js',
   'connectives.js',
+  'compressions.js',
   'words.js',
   'words-thorough.js',
   'patterns.js',
@@ -242,6 +243,7 @@ const payload = {
   context_engine: contextEnginePath,
   syntax_rules: true,
   connective_layer: true,
+  compression_layer: true,
   preferred_alternative: 'max-proxy-local-disruption',
   single_candidate_analysis: {
     max_candidates_per_watermarked_passage: 40,
