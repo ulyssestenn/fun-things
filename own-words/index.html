@@ -7,6 +7,7 @@
   <meta name="theme-color" content="#f3f0e8">
   <title>Own Words — Own your words.</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="metrics.css">
 </head>
 <body>
 <div class="shell">
@@ -14,15 +15,44 @@
   <main>
     <section class="hero"><p class="eyebrow">A private rewriting workspace</p><h1>Own Words.</h1><p class="tagline">Own your words.</p><p class="lede">Paste assisted prose. Own Words offers reversible alternatives for wording and phrasing, entirely on your device. Keep what sounds like you. Reject what does not.</p></section>
     <section class="workspace">
-      <div class="toolbar"><div class="seg" aria-label="Edit intensity"><button data-level="light">Light</button><button data-level="balanced" class="active">Balanced</button><button data-level="thorough">Thorough</button></div><div class="toolbar-note">Highlighted text is a suggestion. Click it to cycle choices. Shift-click to restore.</div></div>
+      <div class="toolbar"><div class="seg" aria-label="Edit intensity"><button data-level="light" title="Target rewrite depth 20–35">Light</button><button data-level="balanced" class="active" title="Target rewrite depth 40–60">Balanced</button><button data-level="thorough" title="Target rewrite depth 65–82">Thorough</button></div><div class="toolbar-note"><span id="targetNote">Balanced target: 40–60</span> · Highlighted text is a suggestion. Click to cycle; shift-click to restore.</div></div>
       <div class="panes">
         <section class="pane"><div class="pane-head"><span class="pane-title">Original</span><button class="text-action" id="sample">Try an example</button></div><textarea id="source" placeholder="Paste or write something here…" spellcheck="true"></textarea><div class="pane-foot"><span id="sourceCount">0 words</span><button class="text-action" id="clear">Clear</button></div></section>
         <section class="pane"><div class="pane-head"><span class="pane-title">Working copy</span><button class="text-action" id="manualBtn" disabled>Edit directly</button></div><div class="out-wrap"><div id="output" class="output empty">Your working copy will appear here.</div><textarea id="manual" spellcheck="true"></textarea></div><div class="pane-foot"><span id="changeCount">No edits yet</span><span>Everything is reversible</span></div></section>
       </div>
       <div class="actions"><button class="btn primary" id="offer">Offer edits</button><button class="btn" id="another" disabled>Another pass</button><button class="btn" id="restore" disabled>Restore originals</button><button class="btn" id="copy" disabled>Copy</button></div>
     </section>
-    <section class="stats"><div class="stat"><b id="words">0</b><span>words in working copy</span></div><div class="stat"><b id="changes">0</b><span>suggested edits</span></div><div class="stat"><b id="touched">0%</b><span>of words touched</span></div></section>
-    <section class="about"><h2>Keep the judgment human.</h2><div class="about-copy"><p><strong>Own Words is not a one-click paraphraser.</strong> It proposes lexical and structural alternatives, marks every automated change, and leaves the decision to you. The final language should be yours, not merely a second machine's version.</p><p>Everything happens in this page. There is no account, server-side rewrite, database, or AI API call containing your prose. Reload the page and your text is gone.</p><p>Changing prose can change statistical signals in machine-generated text, but Own Words does not promise to defeat any particular watermark or detector.</p><div class="principles"><div class="principle"><b>Private</b>Your prose stays on your device.</div><div class="principle"><b>Visible</b>Every automated edit is marked.</div><div class="principle"><b>Reversible</b>Nothing is accepted by force.</div></div></div></section>
+
+    <section class="stats" aria-label="Rewrite statistics">
+      <div class="stat"><b id="words">0</b><span>words in working copy</span></div>
+      <div class="stat"><b id="changes">0</b><span>suggested edits</span></div>
+      <div class="stat"><b id="touched">0%</b><span>of words directly touched</span></div>
+      <div class="stat depth-stat"><b id="depth">0</b><span id="depthLabel">Rewrite depth</span><small id="targetState">No working copy</small></div>
+    </section>
+
+    <details class="calculations">
+      <summary><span>Technical calculations</span><small>Show the token math</small></summary>
+      <div class="calc-body">
+        <div class="calc-intro">
+          <p><strong>Rewrite depth</strong> measures how extensively the working copy diverges from the original while remaining model-neutral. It is not a watermark detector.</p>
+          <p>The browser uses a transparent proxy tokenizer: words, numbers, contractions, and punctuation. It does not know Claude's private tokenizer, watermark key, or detector.</p>
+        </div>
+        <div class="calc-grid">
+          <div class="calc"><span>Original proxy tokens</span><b id="calcOriginalTokens">0</b></div>
+          <div class="calc"><span>Revised proxy tokens</span><b id="calcRevisedTokens">0</b></div>
+          <div class="calc"><span>Token turnover</span><b id="calcTurnover">0%</b><small>Sequence change using LCS when practical</small></div>
+          <div class="calc"><span>3-token disruption</span><b id="calc3">0%</b><small>Original 3-token sequences no longer preserved</small></div>
+          <div class="calc"><span>5-token disruption</span><b id="calc5">0%</b><small>Original 5-token sequences no longer preserved</small></div>
+          <div class="calc"><span>Change coverage</span><b id="calcCoverage">0/10</b><small>Approximate text bands containing changes</small></div>
+          <div class="calc"><span>Structural edits</span><b id="calcStructures">0</b><small>Active structure-level suggestions</small></div>
+          <div class="calc"><span>Turnover method</span><b class="method" id="calcMethod">—</b><small>Falls back for unusually long passages</small></div>
+        </div>
+        <div class="formula"><span>Composite formula</span><code id="calcFormula">—</code></div>
+        <p class="calc-note">A higher score means more of the token path and local token neighborhoods have changed. It does not establish authorship and does not prove that any particular provenance signal has been removed.</p>
+      </div>
+    </details>
+
+    <section class="about"><h2>Keep the judgment human.</h2><div class="about-copy"><p><strong>Own Words is not a one-click paraphraser.</strong> It proposes lexical and structural alternatives, marks every automated change, and leaves the decision to you. The final language should be yours, not merely a second machine's version.</p><p>Everything happens in this page. There is no account, server-side rewrite, database, or AI API call containing your prose. Reload the page and your text is gone.</p><p>Rewrite depth measures linguistic re-expression using model-neutral token comparisons. It is descriptive, not a claim to defeat any particular watermark or detector.</p><div class="principles"><div class="principle"><b>Private</b>Your prose stays on your device.</div><div class="principle"><b>Visible</b>Every automated edit is marked.</div><div class="principle"><b>Reversible</b>Nothing is accepted by force.</div></div></div></section>
   </main>
   <footer><span>Own Words · a personal open-source experiment</span><a href="https://github.com/ulyssestenn/fun-things/tree/main/own-words">View source on GitHub</a></footer>
 </div>
@@ -31,6 +61,7 @@
   <script src="words.js"></script>
   <script src="patterns.js"></script>
   <script src="corpus-2.js"></script>
+  <script src="metrics.js"></script>
   <script src="engine.js"></script>
   <script src="app.js"></script>
 </body>
