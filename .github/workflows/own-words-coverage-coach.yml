@@ -1,0 +1,52 @@
+name: Own Words coverage coach
+
+on:
+  push:
+    branches:
+      - agent/own-words-context-disruption
+    paths:
+      - 'own-words/coverage-coach.js'
+      - 'own-words/research/coverage_coach_benchmark.mjs'
+      - '.github/workflows/own-words-coverage-coach.yml'
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Validate JavaScript
+        run: |
+          node --check own-words/coverage-coach.js
+          node --check own-words/research/coverage_coach_benchmark.mjs
+
+      - name: Reuse benchmark corpus
+        run: |
+          mkdir -p /tmp/coverage-source own-words/research/coverage-coach-results
+          gh run download 31539045977 --repo "$GITHUB_REPOSITORY" --name own-words-synthid-benchmark --dir /tmp/coverage-source
+
+      - name: Analyze guided coverage targets
+        run: |
+          node own-words/research/coverage_coach_benchmark.mjs \
+            /tmp/coverage-source/generated.json \
+            own-words/research/coverage-coach-results/coverage_coach.json
+
+      - name: Upload coverage-coach result
+        uses: actions/upload-artifact@v4
+        with:
+          name: own-words-coverage-coach
+          path: own-words/research/coverage-coach-results
+          if-no-files-found: error
