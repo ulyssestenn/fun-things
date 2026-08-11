@@ -5,8 +5,8 @@ on:
     branches:
       - agent/own-words-context-disruption
     paths:
-      - 'own-words/research/**'
       - 'own-words/engine.js'
+      - 'own-words/app.js'
       - 'own-words/metrics.js'
       - 'own-words/phrases.js'
       - 'own-words/connectives.js'
@@ -15,6 +15,11 @@ on:
       - 'own-words/patterns.js'
       - 'own-words/syntax.js'
       - 'own-words/corpus-*.js'
+      - 'own-words/research/synthid_benchmark.py'
+      - 'own-words/research/synthid_rewrite_runner.mjs'
+      - 'own-words/research/placement_analysis.py'
+      - 'own-words/research/transform_efficiency.py'
+      - 'own-words/research/entropy_efficiency.py'
       - '.github/workflows/own-words-synthid-benchmark.yml'
   workflow_dispatch:
 
