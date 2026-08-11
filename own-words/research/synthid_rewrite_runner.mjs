@@ -14,6 +14,7 @@ if (!generatedPath || !outputPath || !oldEnginePath || !contextEnginePath) {
 const ownWordsDir = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const commonScripts = [
   'phrases.js',
+  'connectives.js',
   'words.js',
   'words-thorough.js',
   'patterns.js',
@@ -50,9 +51,6 @@ function applyCandidates(context, source, candidates, pass = 0) {
   for (const candidate of ordered) {
     output += source.slice(cursor, candidate.start);
     const alts = candidate.alts || [];
-    // Engine alternatives are ordered by model-neutral local sequence disruption.
-    // Use the preferred first alternative for the primary benchmark; users can
-    // still cycle alternatives in the product UI.
     const replacement = alts.length ? alts[pass % alts.length] : candidate.original;
     output += replacement;
     cursor = candidate.end;
@@ -243,6 +241,7 @@ const payload = {
   old_engine: oldEnginePath,
   context_engine: contextEnginePath,
   syntax_rules: true,
+  connective_layer: true,
   preferred_alternative: 'max-proxy-local-disruption',
   single_candidate_analysis: {
     max_candidates_per_watermarked_passage: 40,
