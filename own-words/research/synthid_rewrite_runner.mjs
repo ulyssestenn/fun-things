@@ -50,13 +50,10 @@ function applyCandidates(context, source, candidates, pass = 0) {
   for (const candidate of ordered) {
     output += source.slice(cursor, candidate.start);
     const alts = candidate.alts || [];
-    let replacement = candidate.original;
-    if (alts.length) {
-      const choice = context.OwnWordsEngine.hash(
-        `${candidate.original}|${candidate.start}|${pass}`
-      ) % alts.length;
-      replacement = alts[choice];
-    }
+    // Engine alternatives are ordered by model-neutral local sequence disruption.
+    // Use the preferred first alternative for the primary benchmark; users can
+    // still cycle alternatives in the product UI.
+    const replacement = alts.length ? alts[pass % alts.length] : candidate.original;
     output += replacement;
     cursor = candidate.end;
   }
@@ -90,6 +87,7 @@ function rewriteWith(context, record, selector, mode) {
 }
 
 function inferTransformClass(context, candidate) {
+  if (candidate.transformClass) return candidate.transformClass;
   if (candidate.type === 'word') return 'lexical';
   if (candidate.type === 'phrase') return 'phrase';
   if (candidate.type !== 'structure') return candidate.type || 'unknown';
@@ -122,6 +120,7 @@ function singleCandidateRewrite(context, record, candidate, index) {
     candidate_span_chars: candidate.end - candidate.start,
     candidate_original: candidate.original,
     candidate_alternatives: candidate.alts,
+    candidate_destroyed_windows: candidate.contextWindows?.length || 0,
     metrics,
     text: revised,
   };
@@ -223,15 +222,10 @@ for (const record of generated.records) {
   if (record.source_type === 'watermarked') {
     const pool = contextAware.OwnWordsEngine.findCandidates(record.text, 'thorough');
 
-    // Score individual available edits so we can estimate the empirical
-    // watermark-signal reduction of each transformation class per edit.
     for (let i = 0; i < Math.min(pool.length, 40); i++) {
       rewrites.push(singleCandidateRewrite(contextAware, record, pool[i], i));
     }
 
-    // Fixed-edit placement controls isolate whether edit dispersion matters beyond
-    // raw edit count. We use the Thorough candidate set because benchmark passages
-    // have historically exhausted it, making it a conservative candidate pool.
     const k = 4;
     if (pool.length >= 8) {
       rewrites.push(placementControl(contextAware, record, 'thorough', pool, 'clustered', 0, k));
@@ -249,6 +243,7 @@ const payload = {
   old_engine: oldEnginePath,
   context_engine: contextEnginePath,
   syntax_rules: true,
+  preferred_alternative: 'max-proxy-local-disruption',
   single_candidate_analysis: {
     max_candidates_per_watermarked_passage: 40,
   },
