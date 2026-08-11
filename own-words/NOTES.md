@@ -1,0 +1,1 @@
+Own Words is a local-first rewriting experiment. The editing engine uses a confidence-ranked lexicon plus structural rewrite patterns; strong structural edits are always surfaced before lower-confidence word swaps.
