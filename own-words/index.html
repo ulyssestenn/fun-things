@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Own Words is a private, local-first writing tool for making assisted prose your own.">
   <meta name="theme-color" content="#f3f0e8">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'">
   <title>Own Words — Own your words.</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="metrics.css">
@@ -17,8 +19,8 @@
     <section class="workspace">
       <div class="toolbar"><div class="seg" aria-label="Edit intensity"><button data-level="light" title="Target rewrite depth 20–35">Light</button><button data-level="balanced" class="active" title="Target rewrite depth 40–60">Balanced</button><button data-level="thorough" title="Target rewrite depth 65–82">Thorough</button></div><div class="toolbar-note"><span id="targetNote">Balanced target: 40–60</span> · Highlighted text is a suggestion. Click to cycle; shift-click to restore.</div></div>
       <div class="panes">
-        <section class="pane"><div class="pane-head"><span class="pane-title">Original</span><button class="text-action" id="sample">Try an example</button></div><textarea id="source" placeholder="Paste or write something here…" spellcheck="true"></textarea><div class="pane-foot"><span id="sourceCount">0 words</span><button class="text-action" id="clear">Clear</button></div></section>
-        <section class="pane"><div class="pane-head"><span class="pane-title">Working copy</span><button class="text-action" id="manualBtn" disabled>Edit directly</button></div><div class="out-wrap"><div id="output" class="output empty">Your working copy will appear here.</div><textarea id="manual" spellcheck="true"></textarea></div><div class="pane-foot"><span id="changeCount">No edits yet</span><span>Everything is reversible</span></div></section>
+        <section class="pane"><div class="pane-head"><span class="pane-title">Original</span><button class="text-action" id="sample">Try an example</button></div><textarea id="source" placeholder="Paste or write something here…" spellcheck="false" autocomplete="off"></textarea><div class="pane-foot"><span class="source-meta"><span id="sourceCount">0 / 2,500 words</span><span id="limitState" aria-live="polite">2,500-word / 20,000-character max</span></span><button class="text-action" id="clear">Clear</button></div></section>
+        <section class="pane"><div class="pane-head"><span class="pane-title">Working copy</span><button class="text-action" id="manualBtn" disabled>Edit directly</button></div><div class="out-wrap"><div id="output" class="output empty">Your working copy will appear here.</div><textarea id="manual" spellcheck="false" autocomplete="off"></textarea></div><div class="pane-foot"><span id="changeCount">No edits yet</span><span>Everything is reversible</span></div></section>
       </div>
       <div class="actions"><button class="btn primary" id="offer">Offer edits</button><button class="btn" id="another" disabled>Another pass</button><button class="btn" id="restore" disabled>Restore originals</button><button class="btn" id="copy" disabled>Copy</button></div>
     </section>
@@ -52,7 +54,7 @@
       </div>
     </details>
 
-    <section class="about"><h2>Keep the judgment human.</h2><div class="about-copy"><p><strong>Own Words is not a one-click paraphraser.</strong> It proposes lexical and structural alternatives, marks every automated change, and leaves the decision to you. The final language should be yours, not merely a second machine's version.</p><p>Everything happens in this page. There is no account, server-side rewrite, database, or AI API call containing your prose. Reload the page and your text is gone.</p><p>Rewrite depth measures linguistic re-expression using model-neutral token comparisons. It is descriptive, not a claim to defeat any particular watermark or detector.</p><div class="principles"><div class="principle"><b>Private</b>Your prose stays on your device.</div><div class="principle"><b>Visible</b>Every automated edit is marked.</div><div class="principle"><b>Reversible</b>Nothing is accepted by force.</div></div></div></section>
+    <section class="about"><h2>Keep the judgment human.</h2><div class="about-copy"><p><strong>Own Words is not a one-click paraphraser.</strong> It proposes lexical and structural alternatives, marks every automated change, and leaves the decision to you. The final language should be yours, not merely a second machine's version.</p><p>Everything happens in this page. There is no account, server-side rewrite, database, or AI API call containing your prose. Text processing is capped at 2,500 words and 20,000 characters per passage.</p><p>Rewrite depth measures linguistic re-expression using model-neutral token comparisons. It is descriptive, not a claim to defeat any particular watermark or detector.</p><div class="principles"><div class="principle"><b>Private</b>Your prose stays on your device.</div><div class="principle"><b>Visible</b>Every automated edit is marked.</div><div class="principle"><b>Reversible</b>Nothing is accepted by force.</div></div></div></section>
   </main>
   <footer><span>Own Words · a personal open-source experiment</span><a href="https://github.com/ulyssestenn/fun-things/tree/main/own-words">View source on GitHub</a></footer>
 </div>
@@ -61,6 +63,7 @@
   <script src="words.js"></script>
   <script src="patterns.js"></script>
   <script src="corpus-2.js"></script>
+  <script src="limits.js"></script>
   <script src="metrics.js"></script>
   <script src="engine.js"></script>
   <script src="app.js"></script>

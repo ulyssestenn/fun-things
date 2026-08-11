@@ -1,6 +1,32 @@
 (() => {
   const QUALITY = { light: 3, balanced: 2, thorough: 1 };
-  const countWords=t=>(t.trim().match(/\b[\p{L}\p{N}'’_-]+\b/gu)||[]).length;
+  const HARD_CHAR_CAP = 20000;
+  const HARD_WORD_CAP = 2500;
+  const MAX_POOL = 1200;
+  const MAX_RULE_MATCHES = 96;
+  const MAX_SELECTION_TRIALS = 120;
+  const WORD_RE = /\b[\p{L}\p{N}'’_-]+\b/gu;
+
+  function countWords(t) {
+    if (typeof t !== 'string' || !t) return 0;
+    if (t.length > HARD_CHAR_CAP) return HARD_WORD_CAP + 1;
+    if (window.OwnWordsLimits) return window.OwnWordsLimits.countWordsCapped(t, HARD_WORD_CAP + 1);
+    let count = 0;
+    WORD_RE.lastIndex = 0;
+    while (WORD_RE.exec(t)) {
+      count++;
+      if (count > HARD_WORD_CAP) break;
+    }
+    WORD_RE.lastIndex = 0;
+    return count;
+  }
+
+  function safeInput(text) {
+    if (typeof text !== 'string' || text.length > HARD_CHAR_CAP) return false;
+    if (window.OwnWordsLimits) return window.OwnWordsLimits.inspect(text).ok;
+    return countWords(text) <= HARD_WORD_CAP;
+  }
+
   const esc=s=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const reEsc=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
   const overlap=(a,b)=>a.start<b.end&&b.start<a.end;
@@ -16,12 +42,13 @@
   function chooseToTarget(text, clean, level){
     if(!clean.length)return [];
     const metrics=window.OwnWordsMetrics;
-    if(!metrics)return clean;
+    if(!metrics)return clean.slice(0,MAX_SELECTION_TRIALS);
     const target=(metrics.TARGETS[level]||metrics.TARGETS.balanced);
     const selected=[], remaining=[...clean], usedBands=new Set();
-    let currentDepth=0;
+    let currentDepth=0,trials=0;
 
-    while(remaining.length){
+    while(remaining.length&&trials<MAX_SELECTION_TRIALS){
+      trials++;
       remaining.sort((a,b)=>{
         const bandA=Math.min(9,Math.floor((a.start/Math.max(1,text.length))*10));
         const bandB=Math.min(9,Math.floor((b.start/Math.max(1,text.length))*10));
@@ -34,10 +61,10 @@
       const trialText=preview(text,trial);
       const trialDepth=metrics.scoreRewrite(text,trialText,{candidates:trial,level}).depth;
 
-      if(selected.length && currentDepth>=target.min){
+      if(selected.length&&currentDepth>=target.min){
         const currentDistance=Math.abs(target.ideal-currentDepth);
         const trialDistance=Math.abs(target.ideal-trialDepth);
-        if(trialDepth>target.max && trialDistance>=currentDistance)break;
+        if(trialDepth>target.max&&trialDistance>=currentDistance)break;
         if(currentDepth>=target.ideal)break;
       }
 
@@ -51,28 +78,37 @@
   }
 
   function findCandidates(text, level){
-    const {PHRASES, WORDS, PATTERNS}=window.OwnWordsLexicon;
+    if(!safeInput(text))return [];
+    const lexicon=window.OwnWordsLexicon;
+    if(!lexicon||!Array.isArray(lexicon.PHRASES)||!lexicon.WORDS||!Array.isArray(lexicon.PATTERNS))return [];
+    const {PHRASES, WORDS, PATTERNS}=lexicon;
     const minQ=QUALITY[level]||QUALITY.balanced, pool=[];
+    const add=c=>{if(pool.length>=MAX_POOL)return false;pool.push(c);return true};
+
     for(const pattern of PATTERNS){
-      if(pattern.q<minQ)continue; pattern.re.lastIndex=0; let m;
-      while((m=pattern.re.exec(text))){
+      if(pool.length>=MAX_POOL)break;
+      if(pattern.q<minQ)continue; pattern.re.lastIndex=0; let m,matches=0;
+      while(matches<MAX_RULE_MATCHES&&(m=pattern.re.exec(text))){
+        matches++;
         const alts=pattern.build(m).filter(a=>a&&a!==m[0]);
-        if(alts.length)pool.push({start:m.index,end:m.index+m[0].length,original:m[0],alts,q:pattern.q,type:'structure'});
+        if(alts.length&&!add({start:m.index,end:m.index+m[0].length,original:m[0],alts,q:pattern.q,type:'structure'}))break;
         if(m[0].length===0)pattern.re.lastIndex++;
       }
     }
     for(const [phrase,alts,q] of PHRASES){
-      if(q<minQ)continue; const re=new RegExp(`\\b${reEsc(phrase)}\\b`,'gi'); let m;
-      while((m=re.exec(text))){
+      if(pool.length>=MAX_POOL)break;
+      if(q<minQ)continue; const re=new RegExp(`\\b${reEsc(phrase)}\\b`,'gi'); let m,matches=0;
+      while(matches<MAX_RULE_MATCHES&&(m=re.exec(text))){
+        matches++;
         const choices=alts.map(a=>sameCase(m[0],a)).filter(a=>a.toLowerCase()!==m[0].toLowerCase());
-        if(choices.length)pool.push({start:m.index,end:m.index+m[0].length,original:m[0],alts:choices,q,type:'phrase'});
+        if(choices.length&&!add({start:m.index,end:m.index+m[0].length,original:m[0],alts:choices,q,type:'phrase'}))break;
       }
     }
     const wr=/\b[\p{L}]+\b/gu; let m;
-    while((m=wr.exec(text))){
+    while(pool.length<MAX_POOL&&(m=wr.exec(text))){
       const entry=WORDS[m[0].toLowerCase()]; if(!entry||entry[1]<minQ)continue;
       const choices=entry[0].map(a=>sameCase(m[0],a)).filter(a=>a.toLowerCase()!==m[0].toLowerCase());
-      if(choices.length)pool.push({start:m.index,end:m.index+m[0].length,original:m[0],alts:choices,q:entry[1],type:'word'});
+      if(choices.length)add({start:m.index,end:m.index+m[0].length,original:m[0],alts:choices,q:entry[1],type:'word'});
     }
     pool.sort((a,b)=>b.q-a.q||(b.end-b.start)-(a.end-a.start)||a.start-b.start);
     const clean=[]; for(const c of pool){if(!clean.some(x=>overlap(c,x)))clean.push(c)}
