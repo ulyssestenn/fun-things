@@ -42,11 +42,12 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Validate rewrite JavaScript
+      - name: Validate research code
         run: |
           node --check own-words/syntax.js
           node --check own-words/engine.js
           node --check own-words/research/synthid_rewrite_runner.mjs
+          python -m py_compile own-words/research/synthid_benchmark.py own-words/research/placement_analysis.py own-words/research/transform_efficiency.py
 
       - name: Install benchmark dependencies
         run: |
@@ -64,7 +65,7 @@ jobs:
             --max-new-tokens 160 \
             --output own-words/research/results/generated.json
 
-      - name: Run Own Words selectors and fixed-edit controls
+      - name: Run Own Words selectors and controls
         run: |
           git show origin/main:own-words/engine.js > /tmp/own-words-engine-main.js
           node own-words/research/synthid_rewrite_runner.mjs \
@@ -78,6 +79,13 @@ jobs:
           python own-words/research/synthid_benchmark.py analyze \
             --generated own-words/research/results/generated.json \
             --rewrites own-words/research/results/rewrites.json \
+            --output-dir own-words/research/results
+
+      - name: Analyze single-edit transform efficiency
+        run: |
+          python own-words/research/transform_efficiency.py \
+            --rewrites own-words/research/results/rewrites.json \
+            --csv own-words/research/results/synthid_benchmark_rows.csv \
             --output-dir own-words/research/results
 
       - name: Analyze fixed-edit placement controls
