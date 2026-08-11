@@ -8,6 +8,7 @@
   const THOROUGH_MAX_SELECTED = 600;
   const THOROUGH_SCORE_EVERY = 20;
   const WORD_RE = /\b[\p{L}\p{N}'’_-]+\b/gu;
+  const TOKEN_RE = /[\p{L}\p{N}]+(?:['’][\p{L}\p{N}]+)*|[^\s]/gu;
 
   function countWords(t) {
     if (typeof t !== 'string' || !t) return 0;
@@ -37,6 +38,38 @@
   function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
   function explicitFamily(meta){return typeof meta==='string'?meta:(meta&&typeof meta==='object'?meta.family:null)}
 
+  function proxyTokenSpans(text){
+    const spans=[];let m;
+    TOKEN_RE.lastIndex=0;
+    while((m=TOKEN_RE.exec(text))){
+      spans.push({start:m.index,end:m.index+m[0].length});
+      if(spans.length>9000)break;
+    }
+    TOKEN_RE.lastIndex=0;
+    return spans;
+  }
+
+  function annotateContextWindows(text,candidates,n=5){
+    const tokens=proxyTokenSpans(text);
+    const total=Math.max(0,tokens.length-n+1);
+    if(!total){for(const c of candidates)c.contextWindows=[];return candidates}
+    let tokenCursor=0;
+    for(const c of candidates){
+      while(tokenCursor<tokens.length&&tokens[tokenCursor].end<=c.start)tokenCursor++;
+      let first=-1,last=-1,j=tokenCursor;
+      while(j<tokens.length&&tokens[j].start<c.end){
+        if(tokens[j].end>c.start){if(first<0)first=j;last=j}
+        j++;
+      }
+      if(first<0){c.contextWindows=[];continue}
+      const starts=[];
+      const from=Math.max(0,first-n+1),to=Math.min(last,total-1);
+      for(let start=from;start<=to;start++)starts.push(start);
+      c.contextWindows=starts;
+    }
+    return candidates;
+  }
+
   function preview(text, selected){
     const ordered=[...selected].sort((a,b)=>a.start-b.start);let out='',cursor=0;
     for(const c of ordered){out+=text.slice(cursor,c.start)+(c.alts[0]||c.original);cursor=c.end}
@@ -48,37 +81,43 @@
     return selected.sort((a,b)=>a.start-b.start);
   }
 
-  function candidateScore(c,text,usedBands,familyCounts){
+  function candidateScore(c,text,usedBands,familyCounts,coveredWindows){
     const band=bandFor(c,text);
     const familyCount=c.family?(familyCounts.get(c.family)||0):0;
     const familyBonus=c.family?(familyCount===0?650:-Math.min(450,familyCount*150)):0;
-    return (c.type==='structure'?5000:0)+c.q*1000+(!usedBands.has(band)?450:0)+familyBonus+Math.min(300,c.end-c.start);
+    const windows=Array.isArray(c.contextWindows)?c.contextWindows:[];
+    let newWindows=0;
+    for(const start of windows)if(!coveredWindows.has(start))newWindows++;
+    const contextBonus=Math.min(1600,newWindows*700);
+    const contextOverlapPenalty=Math.min(500,Math.max(0,windows.length-newWindows)*80);
+    return (c.type==='structure'?5000:0)+c.q*1000+(!usedBands.has(band)?450:0)+familyBonus+contextBonus-contextOverlapPenalty+Math.min(300,c.end-c.start);
   }
 
-  function takeBest(remaining,text,usedBands,familyCounts){
+  function takeBest(remaining,text,usedBands,familyCounts,coveredWindows){
     let bestIndex=0,bestScore=-Infinity;
     for(let i=0;i<remaining.length;i++){
-      const score=candidateScore(remaining[i],text,usedBands,familyCounts);
+      const score=candidateScore(remaining[i],text,usedBands,familyCounts,coveredWindows);
       if(score>bestScore||(score===bestScore&&remaining[i].start<remaining[bestIndex].start)){bestScore=score;bestIndex=i}
     }
     return remaining.splice(bestIndex,1)[0];
   }
 
-  function recordSelection(candidate,text,usedBands,familyCounts){
+  function recordSelection(candidate,text,usedBands,familyCounts,coveredWindows){
     usedBands.add(bandFor(candidate,text));
     if(candidate.family)familyCounts.set(candidate.family,(familyCounts.get(candidate.family)||0)+1);
+    if(Array.isArray(candidate.contextWindows))for(const start of candidate.contextWindows)coveredWindows.add(start);
   }
 
   function chooseStandard(text,clean,level){
     const metrics=window.OwnWordsMetrics;
     if(!metrics)return withMeta(clean.slice(0,MAX_SELECTION_TRIALS),{reason:clean.length>MAX_SELECTION_TRIALS?'safety-cap':'exhausted',available:clean.length});
     const target=(metrics.TARGETS[level]||metrics.TARGETS.balanced);
-    const selected=[],remaining=[...clean],usedBands=new Set(),familyCounts=new Map();
+    const selected=[],remaining=[...clean],usedBands=new Set(),familyCounts=new Map(),coveredWindows=new Set();
     let currentDepth=0,trials=0,reason='exhausted';
 
     while(remaining.length&&trials<MAX_SELECTION_TRIALS){
       trials++;
-      const candidate=takeBest(remaining,text,usedBands,familyCounts);
+      const candidate=takeBest(remaining,text,usedBands,familyCounts,coveredWindows);
       const trial=[...selected,candidate];
       const trialText=preview(text,trial);
       const trialDepth=(metrics.scoreRewriteSelection||metrics.scoreRewrite)(text,trialText,{candidates:trial,level}).depth;
@@ -92,7 +131,7 @@
 
       selected.push(candidate);
       currentDepth=trialDepth;
-      recordSelection(candidate,text,usedBands,familyCounts);
+      recordSelection(candidate,text,usedBands,familyCounts,coveredWindows);
       if(currentDepth>=target.ideal){reason='target';break}
     }
 
@@ -106,13 +145,13 @@
     const metrics=window.OwnWordsMetrics;
     if(!metrics)return withMeta(clean.slice(0,Math.min(clean.length,THOROUGH_MAX_SELECTED)),{reason:clean.length>THOROUGH_MAX_SELECTED?'safety-cap':'exhausted',available:clean.length});
     const target=(metrics.TARGETS[level]||metrics.TARGETS.thorough);
-    const selected=[],remaining=[...clean],usedBands=new Set(),familyCounts=new Map();
+    const selected=[],remaining=[...clean],usedBands=new Set(),familyCounts=new Map(),coveredWindows=new Set();
     let estimatedDepth=0,reason='exhausted';
 
     while(remaining.length&&selected.length<THOROUGH_MAX_SELECTED){
-      const candidate=takeBest(remaining,text,usedBands,familyCounts);
+      const candidate=takeBest(remaining,text,usedBands,familyCounts,coveredWindows);
       selected.push(candidate);
-      recordSelection(candidate,text,usedBands,familyCounts);
+      recordSelection(candidate,text,usedBands,familyCounts,coveredWindows);
 
       const shouldMeasure=selected.length%THOROUGH_SCORE_EVERY===0||!remaining.length;
       if(!shouldMeasure)continue;
@@ -129,8 +168,8 @@
       while(remaining.length&&selected.length<THOROUGH_MAX_SELECTED&&finalDepth<target.min){
         const batch=[];
         for(let i=0;i<THOROUGH_SCORE_EVERY&&remaining.length&&selected.length<THOROUGH_MAX_SELECTED;i++){
-          const candidate=takeBest(remaining,text,usedBands,familyCounts);
-          selected.push(candidate);batch.push(candidate);recordSelection(candidate,text,usedBands,familyCounts);
+          const candidate=takeBest(remaining,text,usedBands,familyCounts,coveredWindows);
+          selected.push(candidate);batch.push(candidate);recordSelection(candidate,text,usedBands,familyCounts,coveredWindows);
         }
         if(!batch.length)break;
         const fast=(metrics.scoreRewriteFast||metrics.scoreRewrite)(text,preview(text,selected),{candidates:selected,level}).depth;
@@ -193,6 +232,7 @@
     pool.sort((a,b)=>b.q-a.q||(b.end-b.start)-(a.end-a.start)||a.start-b.start);
     const clean=[];for(const c of pool){if(!clean.some(x=>overlap(c,x)))clean.push(c)}
     clean.sort((a,b)=>a.start-b.start);
+    annotateContextWindows(text,clean,5);
     return chooseToTarget(text,clean,level);
   }
 
