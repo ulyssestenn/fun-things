@@ -4,9 +4,12 @@
   const sourceCount=$('sourceCount'), limitState=$('limitState'), changeCount=$('changeCount'), words=$('words'), changes=$('changes'), touched=$('touched'), toast=$('toast');
   const depth=$('depth'), depthLabel=$('depthLabel'), targetNote=$('targetNote'), targetState=$('targetState');
   const calcOriginalTokens=$('calcOriginalTokens'), calcRevisedTokens=$('calcRevisedTokens'), calcTurnover=$('calcTurnover'), calc3=$('calc3'), calc5=$('calc5'), calcCoverage=$('calcCoverage'), calcStructures=$('calcStructures'), calcMethod=$('calcMethod'), calcFormula=$('calcFormula');
+  const calcSurface=$('calcSurface'), calcFunction=$('calcFunction'), calcSentence=$('calcSentence'), calcPunctuation=$('calcPunctuation'), calcPronoun=$('calcPronoun'), calcShort=$('calcShort'), calcDash=$('calcDash'), calcColon=$('calcColon'), calcSurfaceFormula=$('calcSurfaceFormula');
+  const calcFamilies=$('calcFamilies'), calcFamilyList=$('calcFamilyList');
   const {findCandidates,countWords,esc,hash}=window.OwnWordsEngine;
   const metrics=window.OwnWordsMetrics;
   const limits=window.OwnWordsLimits;
+  const grammar=window.OwnWordsGrammar;
   const L=limits.LIMITS;
   let level='balanced', snapshot='', baseline='', candidates=[], manualMode=false, pass=0;
   const SAMPLE=`Artificial intelligence has the ability to transform a wide range of everyday tasks. However, it is important to note that the technology is most valuable when individuals use it to enhance their own judgment rather than replace it. In order to get better results, users should provide sufficient context, evaluate the response carefully, and maintain control over the final product. This approach enables people to utilize AI efficiently while ensuring that their own perspective remains central.`;
@@ -19,7 +22,7 @@
     leaveManual(false);baseline=text;snapshot=text;pass=0;candidates=findCandidates(text,level);
     candidates.forEach((c,i)=>{c.id=i;c.choice=hash(`${c.original}|${c.start}|${pass}`)%c.alts.length;c.reverted=false});
     render();enable(true);
-    if(!candidates.length){changeCount.textContent='No strong local edits found';say(level==='thorough'?'No strong alternatives found in this passage.':'No edits at this level. Try Thorough.')} else say(`${candidates.length} edit${candidates.length===1?'':'s'} offered.`)
+    if(!candidates.length){changeCount.textContent='No strong local edits found';say(level==='thorough'?'No safe alternatives found in this passage.':'No edits at this level. Try Thorough.')} else say(`${candidates.length} edit${candidates.length===1?'':'s'} offered.`)
   }
 
   function render(){
@@ -36,6 +39,7 @@
 
   function flat(){if(manualMode)return manual.value;if(!snapshot)return '';let out='',cursor=0;for(const c of candidates){out+=snapshot.slice(cursor,c.start)+(c.reverted?c.original:c.alts[c.choice]);cursor=c.end}return out+snapshot.slice(cursor)}
   function pct(value){return `${Math.round(value)}%`}
+  function rate(value){return Number.isFinite(value)?value.toFixed(1):'0.0'}
 
   function stats(){
     const text=flat();
@@ -51,9 +55,38 @@
     updateDepth(text);
   }
 
+  function clearSurface(){
+    calcSurface.textContent='0';calcFunction.textContent='0%';calcSentence.textContent='0%';calcPunctuation.textContent='0%';calcPronoun.textContent='0%';calcShort.textContent='0% → 0%';calcDash.textContent='0.0 → 0.0';calcColon.textContent='0.0 → 0.0';calcSurfaceFormula.textContent='—';calcFamilies.textContent='0';calcFamilyList.textContent='—';
+  }
+
   function clearDepth(message='No working copy'){
     depth.textContent='0';depthLabel.textContent='Rewrite depth';targetState.textContent=message;
     calcOriginalTokens.textContent='0';calcRevisedTokens.textContent='0';calcTurnover.textContent='0%';calc3.textContent='0%';calc5.textContent='0%';calcCoverage.textContent='0/10';calcStructures.textContent='0';calcMethod.textContent='—';calcFormula.textContent='—';
+    clearSurface();
+  }
+
+  function updateSelectionState(result){
+    const meta=!manualMode&&candidates&&candidates.selectionMeta;
+    if(result.targetStatus==='below target'&&meta&&meta.reason==='exhausted'){
+      targetState.textContent=`maximum available · target ${result.target.min}–${result.target.max}`;return;
+    }
+    if(result.targetStatus==='below target'&&meta&&meta.reason==='safety-cap'){
+      targetState.textContent=`selection safety cap · target ${result.target.min}–${result.target.max}`;return;
+    }
+    targetState.textContent=`${result.targetStatus} (${result.target.min}–${result.target.max})`;
+  }
+
+  function updateSurface(result){
+    const s=result.surface;
+    if(!s){clearSurface();return}
+    calcSurface.textContent=s.divergence.toString();
+    calcFunction.textContent=pct(s.functionWords);calcSentence.textContent=pct(s.sentenceShape);calcPunctuation.textContent=pct(s.punctuation);calcPronoun.textContent=pct(s.pronounRegister);
+    calcShort.textContent=`${s.shortSentenceOriginal}% → ${s.shortSentenceRevised}%`;
+    calcDash.textContent=`${rate(s.emDashOriginal)} → ${rate(s.emDashRevised)}`;
+    calcColon.textContent=`${rate(s.colonOriginal)} → ${rate(s.colonRevised)}`;
+    calcSurfaceFormula.textContent=s.formula;
+    const summary=grammar?grammar.summarize(manualMode?[]:candidates):{count:0,labels:[]};
+    calcFamilies.textContent=summary.count.toLocaleString();calcFamilyList.textContent=summary.labels.length?summary.labels.join(' · '):'No classified automated moves';
   }
 
   function updateDepth(text){
@@ -64,8 +97,9 @@
     if(!baseStatus.ok||!workStatus.ok){clearDepth('Over text limit · not calculated');calcMethod.textContent='input guard';return}
     const result=metrics.scoreRewrite(baseline,text,{candidates:manualMode?[]:candidates,level});
     if(result.limited){clearDepth('Safety limit · not calculated');calcMethod.textContent=result.turnoverMethod;calcFormula.textContent=result.formula;return}
-    depth.textContent=result.depth.toString();depthLabel.textContent=`Rewrite depth · ${result.label}`;targetState.textContent=`${result.targetStatus} (${result.target.min}–${result.target.max})`;
+    depth.textContent=result.depth.toString();depthLabel.textContent=`Rewrite depth · ${result.label}`;updateSelectionState(result);
     calcOriginalTokens.textContent=result.originalTokens.toLocaleString();calcRevisedTokens.textContent=result.revisedTokens.toLocaleString();calcTurnover.textContent=pct(result.tokenTurnover);calc3.textContent=pct(result.trigramDisruption);calc5.textContent=pct(result.fivegramDisruption);calcCoverage.textContent=`${result.coverageBands}/10`;calcStructures.textContent=result.structuralEdits.toLocaleString();calcMethod.textContent=result.turnoverMethod;calcFormula.textContent=result.formula;
+    updateSurface(result);
   }
 
   function sourceStats(){
