@@ -24,8 +24,8 @@
     L.PATTERNS.push({ q, re, build, family, transformClass });
   }
 
-  // Causal framing compression. Several framing tokens disappear while the
-  // proposition itself remains intact.
+  // Causal framing compression: remove low-semantic-load framing tokens while
+  // keeping the proposition and explicit causal relation.
   rule(3,
     /\bthe reason (?:why )?([^.!?\n]{3,140}?) is that ([^.!?\n]{3,180})([.!?])/gi,
     m => [`${cap(trimClause(m[1]))} because ${lowerLead(trimClause(m[2]))}${m[3]}`],
@@ -46,8 +46,9 @@
     m => [`${cap(trimClause(m[1]))} mainly because ${lowerLead(trimClause(m[2]))}${m[3]}`],
     'causation', 'syntax-recast');
 
-  // Sentence-level logical recasts. The leading boundary capture prevents a
-  // long sentence from being matched only from an arbitrary suffix.
+  // Sentence-level logical recasts are kept out of Light unless the relation is
+  // unusually explicit. These can change more local sequence while preserving
+  // the stated logical relation, but they deserve more conservative exposure.
   rule(3,
     /(^|[.!?]\s+)([^.!?\n]{3,240})\.\s+This is because\s+([^.!?\n]{3,220})([.!?])/g,
     m => [`${m[1]}${cap(trimClause(m[2]))} because ${lowerLead(trimClause(m[3]))}${m[4]}`],
@@ -63,25 +64,26 @@
     m => [`${m[1]}${cap(trimClause(m[2]))}, so ${lowerLead(trimClause(m[3]))}${m[4]}`],
     'causation', 'sentence-merge');
 
-  rule(3,
+  rule(2,
     /(^|[.!?]\s+)([^.!?\n]{3,240})\.\s+However,\s+([^.!?\n]{3,220})([.!?])/g,
     m => [`${m[1]}Although ${lowerLead(trimClause(m[2]))}, ${lowerLead(trimClause(m[3]))}${m[4]}`],
     'contrast', 'sentence-merge');
 
-  rule(2,
+  rule(1,
     /(^|[.!?]\s+)([^.!?\n]{3,240})\.\s+Nevertheless,\s+([^.!?\n]{3,220})([.!?])/g,
     m => [`${m[1]}Although ${lowerLead(trimClause(m[2]))}, ${lowerLead(trimClause(m[3]))}${m[4]}`],
     'contrast', 'sentence-merge');
 
-  rule(2,
+  rule(1,
     /(^|[.!?]\s+)([^.!?\n]{3,240})\.\s+(?:In contrast|By contrast),\s+([^.!?\n]{3,220})([.!?])/g,
     m => [`${m[1]}${cap(trimClause(m[2]))}, whereas ${lowerLead(trimClause(m[3]))}${m[4]}`],
     'contrast', 'sentence-merge');
 
-  // Local connective recasts are exceptionally low semantic cost.
+  // Local connective recasts are unusually attractive: they change function
+  // words and punctuation at very low semantic risk.
   rule(3,
     /,\s+which means that\s+/gi,
-    m => [sameLeadCase(m[0], ', so ')],
+    () => [', so '],
     'transition', 'connective-recast');
 
   rule(3,
@@ -98,39 +100,6 @@
     /,\s+so\s+/gi,
     () => ['; therefore, '],
     'causation', 'connective-recast');
-
-  // Dependent-clause movement changes two local boundaries with almost no
-  // propositional change. Its value is bounded because intact internal n-grams
-  // survive, so these rules should not be treated as whole-span destruction.
-  rule(3,
-    /\bAlthough\s+([^,;.!?\n]{3,160}),\s+([^,;.!?\n]{3,180})([.!?])/g,
-    m => [`${cap(trimClause(m[1]))}, but ${lowerLead(trimClause(m[2]))}${m[3]}`],
-    'contrast', 'clause-reorder');
-
-  rule(3,
-    /\bBecause\s+([^,;.!?\n]{3,160}),\s+([^,;.!?\n]{3,180})([.!?])/g,
-    m => [`${cap(trimClause(m[2]))} because ${lowerLead(trimClause(m[1]))}${m[3]}`],
-    'causation', 'clause-reorder');
-
-  rule(3,
-    /\bIf\s+([^,;.!?\n]{3,160}),\s+([^,;.!?\n]{3,180})([.!?])/g,
-    m => [`${cap(trimClause(m[2]))} if ${lowerLead(trimClause(m[1]))}${m[3]}`],
-    'case_split', 'clause-reorder');
-
-  rule(3,
-    /\bWhen\s+([^,;.!?\n]{3,160}),\s+([^,;.!?\n]{3,180})([.!?])/g,
-    m => [`${cap(trimClause(m[2]))} when ${lowerLead(trimClause(m[1]))}${m[3]}`],
-    'temporal_shift', 'clause-reorder');
-
-  rule(3,
-    /\bAfter\s+([^,;.!?\n]{3,160}),\s+([^,;.!?\n]{3,180})([.!?])/g,
-    m => [`${cap(trimClause(m[2]))} after ${lowerLead(trimClause(m[1]))}${m[3]}`],
-    'temporal_shift', 'clause-reorder');
-
-  rule(3,
-    /\bBefore\s+([^,;.!?\n]{3,160}),\s+([^,;.!?\n]{3,180})([.!?])/g,
-    m => [`${cap(trimClause(m[2]))} before ${lowerLead(trimClause(m[1]))}${m[3]}`],
-    'temporal_shift', 'clause-reorder');
 
   // Nominalization -> direct verb. Matching only the framing phrase avoids
   // reparsing or regenerating the surrounding subject/object.
