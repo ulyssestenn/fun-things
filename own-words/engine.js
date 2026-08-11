@@ -32,6 +32,7 @@
   const overlap=(a,b)=>a.start<b.end&&b.start<a.end;
   function sameCase(original,replacement){if(!original||!replacement)return replacement;if(original.toUpperCase()===original&&/[A-Z]/.test(original))return replacement.toUpperCase();if(original[0]===original[0].toUpperCase())return replacement[0].toUpperCase()+replacement.slice(1);return replacement}
   function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
+  function explicitFamily(meta){return typeof meta==='string'?meta:(meta&&typeof meta==='object'?meta.family:null)}
 
   function preview(text, selected){
     const ordered=[...selected].sort((a,b)=>a.start-b.start);let out='',cursor=0;
@@ -44,18 +45,19 @@
     const metrics=window.OwnWordsMetrics;
     if(!metrics)return clean.slice(0,MAX_SELECTION_TRIALS);
     const target=(metrics.TARGETS[level]||metrics.TARGETS.balanced);
-    const selected=[], remaining=[...clean], usedBands=new Set();
+    const selected=[], remaining=[...clean], usedBands=new Set(), familyCounts=new Map();
     let currentDepth=0,trials=0;
+
+    const selectionScore=c=>{
+      const band=Math.min(9,Math.floor((c.start/Math.max(1,text.length))*10));
+      const familyCount=c.family?(familyCounts.get(c.family)||0):0;
+      const familyBonus=c.family?(familyCount===0?650:-Math.min(450,familyCount*150)):0;
+      return (c.type==='structure'?5000:0)+c.q*1000+(!usedBands.has(band)?450:0)+familyBonus+Math.min(300,c.end-c.start);
+    };
 
     while(remaining.length&&trials<MAX_SELECTION_TRIALS){
       trials++;
-      remaining.sort((a,b)=>{
-        const bandA=Math.min(9,Math.floor((a.start/Math.max(1,text.length))*10));
-        const bandB=Math.min(9,Math.floor((b.start/Math.max(1,text.length))*10));
-        const scoreA=(a.type==='structure'?5000:0)+a.q*1000+(!usedBands.has(bandA)?450:0)+Math.min(300,a.end-a.start);
-        const scoreB=(b.type==='structure'?5000:0)+b.q*1000+(!usedBands.has(bandB)?450:0)+Math.min(300,b.end-b.start);
-        return scoreB-scoreA||a.start-b.start;
-      });
+      remaining.sort((a,b)=>selectionScore(b)-selectionScore(a)||a.start-b.start);
       const candidate=remaining.shift();
       const trial=[...selected,candidate];
       const trialText=preview(text,trial);
@@ -71,6 +73,7 @@
       selected.push(candidate);
       currentDepth=trialDepth;
       usedBands.add(Math.min(9,Math.floor((candidate.start/Math.max(1,text.length))*10)));
+      if(candidate.family)familyCounts.set(candidate.family,(familyCounts.get(candidate.family)||0)+1);
       if(currentDepth>=target.ideal)break;
     }
 
@@ -82,6 +85,7 @@
     const lexicon=window.OwnWordsLexicon;
     if(!lexicon||!Array.isArray(lexicon.PHRASES)||!lexicon.WORDS||!Array.isArray(lexicon.PATTERNS))return [];
     const {PHRASES, WORDS, PATTERNS}=lexicon;
+    const grammar=window.OwnWordsGrammar;
     const minQ=QUALITY[level]||QUALITY.balanced, pool=[];
     const add=c=>{if(pool.length>=MAX_POOL)return false;pool.push(c);return true};
 
@@ -91,24 +95,27 @@
       while(matches<MAX_RULE_MATCHES&&(m=pattern.re.exec(text))){
         matches++;
         const alts=pattern.build(m).filter(a=>a&&a!==m[0]);
-        if(alts.length&&!add({start:m.index,end:m.index+m[0].length,original:m[0],alts,q:pattern.q,type:'structure'}))break;
+        const family=grammar?grammar.classify(m[0],'structure',pattern.family):null;
+        if(alts.length&&!add({start:m.index,end:m.index+m[0].length,original:m[0],alts,q:pattern.q,type:'structure',family}))break;
         if(m[0].length===0)pattern.re.lastIndex++;
       }
     }
-    for(const [phrase,alts,q] of PHRASES){
+    for(const entry of PHRASES){
       if(pool.length>=MAX_POOL)break;
+      const [phrase,alts,q,meta]=entry;
       if(q<minQ)continue; const re=new RegExp(`\\b${reEsc(phrase)}\\b`,'gi'); let m,matches=0;
+      const family=grammar?grammar.classify(phrase,'phrase',explicitFamily(meta)):null;
       while(matches<MAX_RULE_MATCHES&&(m=re.exec(text))){
         matches++;
         const choices=alts.map(a=>sameCase(m[0],a)).filter(a=>a.toLowerCase()!==m[0].toLowerCase());
-        if(choices.length&&!add({start:m.index,end:m.index+m[0].length,original:m[0],alts:choices,q,type:'phrase'}))break;
+        if(choices.length&&!add({start:m.index,end:m.index+m[0].length,original:m[0],alts:choices,q,type:'phrase',family}))break;
       }
     }
     const wr=/\b[\p{L}]+\b/gu; let m;
     while(pool.length<MAX_POOL&&(m=wr.exec(text))){
       const entry=WORDS[m[0].toLowerCase()]; if(!entry||entry[1]<minQ)continue;
       const choices=entry[0].map(a=>sameCase(m[0],a)).filter(a=>a.toLowerCase()!==m[0].toLowerCase());
-      if(choices.length)add({start:m.index,end:m.index+m[0].length,original:m[0],alts:choices,q:entry[1],type:'word'});
+      if(choices.length)add({start:m.index,end:m.index+m[0].length,original:m[0],alts:choices,q:entry[1],type:'word',family:null});
     }
     pool.sort((a,b)=>b.q-a.q||(b.end-b.start)-(a.end-a.start)||a.start-b.start);
     const clean=[]; for(const c of pool){if(!clean.some(x=>overlap(c,x)))clean.push(c)}
