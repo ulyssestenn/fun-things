@@ -57,7 +57,7 @@ jobs:
             --max-new-tokens 160 \
             --output own-words/research/results/generated.json
 
-      - name: Run old and context-aware Own Words selectors
+      - name: Run Own Words selectors and fixed-edit controls
         run: |
           git show origin/main:own-words/engine.js > /tmp/own-words-engine-main.js
           node own-words/research/synthid_rewrite_runner.mjs \
@@ -71,6 +71,12 @@ jobs:
           python own-words/research/synthid_benchmark.py analyze \
             --generated own-words/research/results/generated.json \
             --rewrites own-words/research/results/rewrites.json \
+            --output-dir own-words/research/results
+
+      - name: Analyze fixed-edit placement controls
+        run: |
+          python own-words/research/placement_analysis.py \
+            --csv own-words/research/results/synthid_benchmark_rows.csv \
             --output-dir own-words/research/results
 
       - name: Upload benchmark results
