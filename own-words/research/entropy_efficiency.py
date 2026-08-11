@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Test whether LM uncertainty predicts single-edit SynthID score reduction.
 
-This is research-only. It uses the public benchmark model as a surrogate signal
-estimator and does not assume access to any production watermark model or key.
+This is research-only. It can use either the benchmark generator itself or an
+unrelated causal LM as a surrogate signal estimator. It assumes no access to any
+production watermark model or key.
 """
 
 from __future__ import annotations
@@ -11,6 +12,7 @@ import argparse
 import csv
 import json
 import math
+import re
 from pathlib import Path
 
 import numpy as np
@@ -39,6 +41,10 @@ def fmt(value, digits=3):
     return f"{value:.{digits}f}" if math.isfinite(value) else "—"
 
 
+def slug(value: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-") or "surrogate"
+
+
 def infer_span(source: str, item: dict) -> tuple[int, int] | None:
     original = item.get("candidate_original") or ""
     revised = item.get("text") or ""
@@ -62,7 +68,6 @@ def infer_span(source: str, item: dict) -> tuple[int, int] | None:
 def source_design(ids: list[str], *controls: np.ndarray) -> np.ndarray:
     unique = sorted(set(ids))
     columns = [np.ones(len(ids), dtype=float)]
-    # Source fixed effects: omit first source to avoid exact collinearity.
     for source_id in unique[1:]:
         columns.append(np.array([1.0 if value == source_id else 0.0 for value in ids]))
     for control in controls:
@@ -107,11 +112,15 @@ def main():
     parser.add_argument("--rewrites", required=True)
     parser.add_argument("--csv", required=True)
     parser.add_argument("--output-dir", required=True)
+    parser.add_argument("--surrogate-model", default=None)
+    parser.add_argument("--label", default=None)
     args = parser.parse_args()
 
     generated = json.loads(Path(args.generated).read_text(encoding="utf-8"))
     rewrites = json.loads(Path(args.rewrites).read_text(encoding="utf-8"))
-    model_id = generated["configuration"]["model"]
+    generator_model_id = generated["configuration"]["model"]
+    surrogate_model_id = args.surrogate_model or generator_model_id
+    label = args.label or ("generator" if surrogate_model_id == generator_model_id else slug(surrogate_model_id))
 
     sources = {
         (record["id"], record["source_type"]): record["text"]
@@ -129,8 +138,8 @@ def main():
             if row.get("selector") == "single" and row.get("source_type") == "watermarked":
                 detector_rows[(row["id"], row["mode"])] = row
 
-    tokenizer = AutoTokenizer.from_pretrained(model_id, use_fast=True)
-    model = AutoModelForCausalLM.from_pretrained(model_id)
+    tokenizer = AutoTokenizer.from_pretrained(surrogate_model_id, use_fast=True)
+    model = AutoModelForCausalLM.from_pretrained(surrogate_model_id)
     model.eval()
     torch.set_num_threads(max(1, min(4, torch.get_num_threads())))
 
@@ -157,14 +166,13 @@ def main():
             entropy = -(probs * log_probs).sum(dim=-1)
             confidence = probs.max(dim=-1).values
 
-        # index i in these arrays describes source token i+1, predicted from its prefix.
         per_source_token_stats[source_id] = {
             "offsets": offsets,
             "entropy": entropy.cpu().numpy(),
             "surprisal": (-observed_logp).cpu().numpy(),
             "confidence": confidence.cpu().numpy(),
         }
-        print(f"scored uncertainty for {source_id}", flush=True)
+        print(f"{label}: scored uncertainty for {source_id}", flush=True)
 
     rows = []
     for key, item in single_meta.items():
@@ -188,8 +196,6 @@ def main():
         if not direct:
             continue
 
-        # Editing a token also perturbs the four subsequent context windows in the
-        # published ngram_len=5 scheme, so record a slightly wider local signal too.
         affected = sorted(set(
             idx
             for base in direct
@@ -251,11 +257,12 @@ def main():
 
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
+    suffix = "" if label == "generator" else f"-{slug(label)}"
 
     report = [
         "# Entropy-weighted edit targeting",
         "",
-        f"Surrogate model: `{model_id}`. Each observation is one accepted Own Words edit on a watermarked passage. The analysis asks whether local LM uncertainty predicts additional reference-detector reduction after controlling for Own Words proxy 5-token disruption, token turnover, and source-passage fixed effects.",
+        f"Generator model: `{generator_model_id}`. Surrogate uncertainty model: `{surrogate_model_id}`. Each observation is one accepted Own Words edit on a watermarked passage. The analysis asks whether local LM uncertainty predicts additional reference-detector reduction after controlling for Own Words proxy 5-token disruption, token turnover, and source-passage fixed effects.",
         "",
         "This is a reference-model experiment, not a claim that the same uncertainty map is available for or transfers to Gemini production generation.",
         "",
@@ -274,15 +281,20 @@ def main():
         "",
         "If Tournament-watermark theory transfers cleanly to this setup, higher entropy / surprisal should be associated with larger detector-score reduction, while higher confidence should be associated with smaller reduction. The partial columns are the important ones because raw uncertainty can correlate with how many tokens a candidate changes.",
         "",
-        "A weak or unstable partial relationship means Own Words should remain model-free and optimize sequence coverage alone. A strong stable relationship would justify a second experiment using a *different* small surrogate LM to test whether uncertainty targeting transfers across models.",
+        "For an unrelated surrogate model, a stable relationship in the same direction is evidence that uncertainty targeting transfers beyond privileged access to the generator. A weak or reversed relationship argues for keeping Own Words model-free and optimizing sequence coverage alone.",
     ]
 
-    (output_dir / "ENTROPY-EFFICIENCY.md").write_text("\n".join(report) + "\n", encoding="utf-8")
-    (output_dir / "entropy_efficiency.json").write_text(
-        json.dumps({"rows": len(rows), "results": results}, indent=2), encoding="utf-8"
+    (output_dir / f"ENTROPY-EFFICIENCY{suffix}.md").write_text("\n".join(report) + "\n", encoding="utf-8")
+    (output_dir / f"entropy_efficiency{suffix}.json").write_text(
+        json.dumps({
+            "generator_model": generator_model_id,
+            "surrogate_model": surrogate_model_id,
+            "rows": len(rows),
+            "results": results,
+        }, indent=2), encoding="utf-8"
     )
     if rows:
-        with (output_dir / "entropy_efficiency_rows.csv").open("w", encoding="utf-8", newline="") as handle:
+        with (output_dir / f"entropy_efficiency_rows{suffix}.csv").open("w", encoding="utf-8", newline="") as handle:
             writer = csv.DictWriter(handle, fieldnames=list(rows[0].keys()))
             writer.writeheader()
             writer.writerows(rows)
