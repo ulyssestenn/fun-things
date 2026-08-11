@@ -17,6 +17,7 @@ const commonScripts = [
   'words.js',
   'words-thorough.js',
   'patterns.js',
+  'syntax.js',
   'corpus-2.js',
   'corpus-3.js',
   'corpus-4.js',
@@ -182,8 +183,8 @@ for (const record of generated.records) {
   }
 
   // Fixed-edit placement controls isolate whether edit dispersion matters beyond
-  // raw edit count. We use the Thorough candidate set because current benchmark
-  // passages exhaust it, making this the complete conservative candidate pool.
+  // raw edit count. We use the Thorough candidate set because benchmark passages
+  // have historically exhausted it, making it a conservative candidate pool.
   if (record.source_type === 'watermarked') {
     const pool = contextAware.OwnWordsEngine.findCandidates(record.text, 'thorough');
     const k = 4;
@@ -202,6 +203,7 @@ const payload = {
   source_configuration: generated.configuration,
   old_engine: oldEnginePath,
   context_engine: contextEnginePath,
+  syntax_rules: true,
   placement_control: {
     edit_count: 4,
     random_subsets_per_eligible_watermarked_passage: 20,
