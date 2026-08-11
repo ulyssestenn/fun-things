@@ -6,43 +6,7 @@
   <meta name="description" content="Own Words is a private, local-first writing tool for making assisted prose your own.">
   <meta name="theme-color" content="#f3f0e8">
   <title>Own Words — Own your words.</title>
-  <style>
-    :root {
-      --paper:#f3f0e8; --surface:#fbfaf6; --ink:#171715; --muted:#716f68;
-      --line:#d8d4c9; --line-dark:#b9b4a8; --accent:#244b62; --accent-soft:#e1ebef;
-      --mark:#e8dcae; --mark-hover:#dccb87; --green:#315b43; --radius:16px;
-      --shadow:0 18px 55px rgba(26,24,20,.055);
-    }
-    *{box-sizing:border-box}
-    body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
-    button,textarea{font:inherit}
-    .shell{width:min(1180px,calc(100% - 36px));margin:auto}
-    header{min-height:76px;border-bottom:1px solid rgba(23,23,21,.11);display:flex;align-items:center;justify-content:space-between;gap:18px}
-    .brand{display:flex;align-items:center;gap:9px;color:inherit;text-decoration:none;font-weight:750;letter-spacing:-.02em}
-    .brand-dot{width:11px;height:11px;border:2px solid var(--ink);border-radius:50%}
-    .private{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:.78rem}.private i{width:7px;height:7px;border-radius:50%;background:var(--green)}
-    .hero{padding:72px 0 36px;max-width:800px}.eyebrow{margin:0 0 18px;color:var(--accent);font-size:.72rem;font-weight:800;letter-spacing:.13em;text-transform:uppercase}
-    h1{font:400 clamp(3.2rem,7vw,6.6rem)/.91 Georgia,"Times New Roman",serif;letter-spacing:-.055em;margin:0}.tagline{font-size:clamp(1.2rem,2vw,1.55rem);letter-spacing:-.025em;margin:20px 0 0;color:#42413d}
-    .lede{max-width:680px;margin:15px 0 0;color:var(--muted);font-size:.97rem;line-height:1.65}
-    .workspace{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
-    .toolbar{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;background:rgba(255,255,255,.42)}
-    .seg{display:flex;background:#ebe7df;padding:3px;border-radius:10px;gap:2px}.seg button{border:0;background:none;color:var(--muted);padding:7px 12px;border-radius:8px;cursor:pointer;font-size:.8rem;font-weight:700}.seg button.active{background:var(--surface);color:var(--ink);box-shadow:0 1px 5px rgba(0,0,0,.08)}
-    .toolbar-note{color:var(--muted);font-size:.76rem}.panes{display:grid;grid-template-columns:1fr 1fr;min-height:500px}.pane{min-width:0;display:flex;flex-direction:column}.pane+.pane{border-left:1px solid var(--line)}
-    .pane-head{min-height:54px;padding:15px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:12px}.pane-title{font-size:.77rem;text-transform:uppercase;letter-spacing:.08em;font-weight:800}
-    .text-action{border:0;background:none;color:var(--accent);padding:4px 0;cursor:pointer;font-size:.76rem}.text-action:hover{text-decoration:underline}.text-action:disabled{opacity:.4;cursor:not-allowed}
-    textarea{width:100%;flex:1;min-height:390px;border:0;outline:0;resize:none;background:transparent;color:var(--ink);padding:24px;font:400 1.05rem/1.72 Georgia,"Times New Roman",serif}textarea::placeholder{color:#aaa69e}
-    .out-wrap{flex:1;min-height:390px;padding:24px}.output{min-height:342px;white-space:pre-wrap;overflow-wrap:anywhere;font:400 1.05rem/1.72 Georgia,"Times New Roman",serif}.output.empty{color:#aaa69e;font-style:italic}
-    .edit{appearance:none;border:0;background:var(--mark);color:inherit;padding:0 2px;margin:0 -1px;border-radius:3px;font:inherit;line-height:inherit;cursor:pointer;text-align:left;box-shadow:inset 0 -1px 0 rgba(23,23,21,.16)}.edit:hover,.edit:focus-visible{background:var(--mark-hover);outline:0}.edit.reverted{background:transparent;box-shadow:inset 0 -1px 0 var(--line-dark)}
-    #manual{display:none;width:100%;min-height:342px;padding:0}.pane-foot{min-height:56px;padding:12px 18px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--muted);font-size:.76rem}
-    .actions{padding:16px 18px;border-top:1px solid var(--line);display:flex;gap:10px;flex-wrap:wrap;background:rgba(255,255,255,.42)}.btn{border:1px solid var(--line-dark);background:var(--surface);color:var(--ink);padding:10px 15px;border-radius:10px;font-size:.82rem;font-weight:750;cursor:pointer}.btn.primary{background:var(--ink);border-color:var(--ink);color:#fff}.btn:hover{border-color:#8c887f}.btn:active{transform:translateY(1px)}.btn:disabled{opacity:.4;cursor:not-allowed}
-    .stats{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin:28px 0 70px;background:rgba(251,250,246,.7)}.stat{padding:20px 22px;min-height:92px}.stat+.stat{border-left:1px solid var(--line)}.stat b{display:block;font:400 1.7rem Georgia,serif;letter-spacing:-.03em}.stat span{display:block;margin-top:5px;color:var(--muted);font-size:.74rem}
-    .about{border-top:1px solid rgba(23,23,21,.12);padding:54px 0 80px;display:grid;grid-template-columns:1fr 1.35fr;gap:80px}.about h2{font:400 clamp(2rem,4vw,3.4rem)/1.04 Georgia,serif;letter-spacing:-.045em;margin:0}.about-copy{color:#4d4b46;line-height:1.75;font-size:.94rem}.about-copy p:first-child{margin-top:0}.about-copy strong{color:var(--ink)}
-    .principles{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:28px}.principle{border-top:1px solid var(--line-dark);padding-top:10px;color:var(--muted);font-size:.78rem;line-height:1.45}.principle b{display:block;color:var(--ink);margin-bottom:3px}
-    footer{border-top:1px solid rgba(23,23,21,.12);min-height:90px;display:flex;align-items:center;justify-content:space-between;gap:20px;color:var(--muted);font-size:.75rem}footer a{color:var(--ink)}
-    .toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,12px);opacity:0;pointer-events:none;background:var(--ink);color:#fff;padding:10px 14px;border-radius:9px;font-size:.78rem;transition:.15s;z-index:10}.toast.show{opacity:1;transform:translate(-50%,0)}
-    @media(max-width:820px){.shell{width:min(100% - 24px,1180px)}.hero{padding-top:50px}.panes{grid-template-columns:1fr}.pane+.pane{border-left:0;border-top:1px solid var(--line)}.about{grid-template-columns:1fr;gap:24px}.stats{margin-bottom:50px}}
-    @media(max-width:560px){h1{font-size:3.5rem}.private span{display:none}.actions .btn{flex:1 1 calc(50% - 10px)}.stats{grid-template-columns:1fr}.stat+.stat{border-left:0;border-top:1px solid var(--line)}.principles{grid-template-columns:1fr}footer{align-items:flex-start;flex-direction:column;justify-content:center}}
-  </style>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 <div class="shell">
@@ -58,116 +22,15 @@
       <div class="actions"><button class="btn primary" id="offer">Offer edits</button><button class="btn" id="another" disabled>Another pass</button><button class="btn" id="restore" disabled>Restore originals</button><button class="btn" id="copy" disabled>Copy</button></div>
     </section>
     <section class="stats"><div class="stat"><b id="words">0</b><span>words in working copy</span></div><div class="stat"><b id="changes">0</b><span>suggested edits</span></div><div class="stat"><b id="touched">0%</b><span>of words touched</span></div></section>
-    <section class="about"><h2>Keep the judgment human.</h2><div class="about-copy"><p><strong>Own Words is not a one-click paraphraser.</strong> It proposes alternatives, marks every automated change, and leaves the decision to you. The final language should be yours, not merely a second machine's version.</p><p>Everything happens in this page. There is no account, server-side rewrite, database, or AI API call containing your prose. Reload the page and your text is gone.</p><p>Changing prose can change statistical signals in machine-generated text, but Own Words does not promise to defeat any particular watermark or detector.</p><div class="principles"><div class="principle"><b>Private</b>Your prose stays on your device.</div><div class="principle"><b>Visible</b>Every automated edit is marked.</div><div class="principle"><b>Reversible</b>Nothing is accepted by force.</div></div></div></section>
+    <section class="about"><h2>Keep the judgment human.</h2><div class="about-copy"><p><strong>Own Words is not a one-click paraphraser.</strong> It proposes lexical and structural alternatives, marks every automated change, and leaves the decision to you. The final language should be yours, not merely a second machine's version.</p><p>Everything happens in this page. There is no account, server-side rewrite, database, or AI API call containing your prose. Reload the page and your text is gone.</p><p>Changing prose can change statistical signals in machine-generated text, but Own Words does not promise to defeat any particular watermark or detector.</p><div class="principles"><div class="principle"><b>Private</b>Your prose stays on your device.</div><div class="principle"><b>Visible</b>Every automated edit is marked.</div><div class="principle"><b>Reversible</b>Nothing is accepted by force.</div></div></div></section>
   </main>
   <footer><span>Own Words · a personal open-source experiment</span><a href="https://github.com/ulyssestenn/fun-things/tree/main/own-words">View source on GitHub</a></footer>
 </div>
 <div class="toast" id="toast"></div>
-<script>
-(() => {
-  const $ = id => document.getElementById(id);
-  const source=$('source'), output=$('output'), manual=$('manual'), offer=$('offer'), another=$('another'), restore=$('restore'), copy=$('copy'), manualBtn=$('manualBtn'), sample=$('sample'), clear=$('clear');
-  const sourceCount=$('sourceCount'), changeCount=$('changeCount'), words=$('words'), changes=$('changes'), touched=$('touched'), toast=$('toast');
-  let level='balanced', snapshot='', candidates=[], manualMode=false, pass=0;
-
-  const LEVEL = {light:{quality:3,ratio:.38},balanced:{quality:2,ratio:.72},thorough:{quality:1,ratio:1}};
-
-  const PHRASES = [
-    ['in order to',['to'],3],['due to the fact that',['because','since'],3],['for the purpose of',['to','for'],3],['at this point in time',['now'],3],['in the event that',['if'],3],
-    ['a large number of',['many','numerous'],3],['a significant number of',['many','a substantial number of'],3],['a wide range of',['many','a variety of','varied'],3],['the vast majority of',['most'],3],
-    ['has the ability to',['can','is able to'],3],['have the ability to',['can','are able to'],3],['is able to',['can'],3],['are able to',['can'],3],['may be able to',['might be able to'],3],
-    ['it is important to note that',['notably,','it is worth noting that'],3],['it is worth noting that',['notably,','notice that'],3],['it should be noted that',['notably,'],3],['it is important to remember that',['remember that'],3],
-    ['in today\'s world',['today'],3],['in the modern world',['today','in modern life'],3],['on a daily basis',['daily','every day'],3],['on a regular basis',['regularly'],3],['in close proximity to',['near'],3],
-    ['with regard to',['about','regarding'],3],['with respect to',['about','regarding'],3],['in relation to',['about','relative to'],2],['in terms of',['for','regarding'],2],
-    ['in addition to',['besides','along with'],2],['as well as',['along with','and'],2],['as a result of',['because of','from'],2],['as a result',['so','consequently'],2],['for this reason',['therefore','so'],2],
-    ['in spite of the fact that',['although','even though'],3],['despite the fact that',['although','even though'],3],['the reason why',['the reason','why'],2],['the fact that',['that'],2],
-    ['serves as a reminder that',['reminds us that','shows that'],2],['serves to highlight',['highlights','shows'],3],['can be seen as',['can be viewed as','is arguably'],2],['when it comes to',['for','when considering'],2],
-    ['from the perspective of',['from the view of','for'],2],['at the same time',['meanwhile','still'],2],['as a means of',['to','as a way to'],3],['in many cases',['often'],3],['in most cases',['usually'],3],['in some cases',['sometimes'],3],
-    ['for example',['for instance'],3],['for instance',['for example'],3],['in other words',['put differently'],3],['on the other hand',['by contrast'],3],['in contrast',['by contrast'],3],['by contrast',['in contrast'],3],
-    ['in fact',['actually'],2],['in particular',['especially'],2],['in general',['generally'],3],['a lot of',['many','plenty of'],2],['kind of',['somewhat'],2],['sort of',['somewhat'],2],
-    ['is likely to',['will probably'],2],['are likely to',['will probably'],2],['this means that',['so','that means'],2],['this suggests that',['this indicates that','this points to the idea that'],2],
-    ['take into account',['consider'],3],['keep in mind',['remember'],3],['make sure',['ensure'],3],['helps to',['helps'],2],['allows you to',['lets you'],3],['allows users to',['lets users'],3],
-    ['plays a crucial role in',['is central to','matters greatly to','is important to'],2],['play a crucial role in',['are central to','matter greatly to','are important to'],2],
-    ['it is possible that',['perhaps','possibly'],1],['there is a chance that',['possibly','perhaps'],1],['the key point is',['the main point is'],2],['one of the key',['one of the main'],2],
-    ['do not',['don\'t'],2],['does not',['doesn\'t'],2],['did not',['didn\'t'],2],['is not',['isn\'t'],2],['are not',['aren\'t'],2],['was not',['wasn\'t'],2],['were not',['weren\'t'],2],
-    ['cannot',['can\'t'],2],['could not',['couldn\'t'],2],['would not',['wouldn\'t'],2],['should not',['shouldn\'t'],2],['will not',['won\'t'],2],['have not',['haven\'t'],2],['has not',['hasn\'t'],2],['had not',['hadn\'t'],2],
-    ['it is',['it\'s'],1],['that is',['that\'s'],1],['there is',['there\'s'],1],['they are',['they\'re'],1],['we are',['we\'re'],1],['you are',['you\'re'],1]
-  ];
-
-  const WORDS = {
-    additionally:[['also','besides'],3],furthermore:[['also','moreover','besides'],3],moreover:[['also','furthermore'],3],however:[['but','still','yet'],2],therefore:[['so','thus'],2],thus:[['so','therefore'],2],consequently:[['so','as a result'],3],nevertheless:[['still','even so','yet'],3],nonetheless:[['still','even so','yet'],3],alternatively:[['instead','as another option'],3],
-    approximately:[['about','roughly'],3],numerous:[['many','several'],3],various:[['several','different'],2],significant:[['major','meaningful','substantial'],2],crucial:[['essential','critical','important'],2],essential:[['necessary','key','critical'],2],important:[['key','significant','meaningful'],2],notable:[['striking','important','remarkable'],2],substantial:[['large','considerable','meaningful'],2],
-    comprehensive:[['complete','broad','thorough'],2],robust:[['strong','durable','reliable'],2],innovative:[['new','inventive','original'],2],unique:[['distinctive','unusual'],2],valuable:[['useful','worthwhile','important'],2],beneficial:[['helpful','useful'],3],effective:[['successful','useful','strong'],2],efficient:[['streamlined','productive'],2],complex:[['complicated','intricate'],2],simple:[['plain','straightforward'],2],
-    utilize:[['use','employ'],3],utilizes:[['uses','employs'],3],utilized:[['used','employed'],3],utilizing:[['using','employing'],3],facilitate:[['help','enable','support'],3],facilitates:[['helps','enables','supports'],3],facilitated:[['helped','enabled','supported'],3],
-    demonstrate:[['show','establish'],3],demonstrates:[['shows','establishes'],3],demonstrated:[['showed','established'],3],indicate:[['show','suggest','signal'],3],indicates:[['shows','suggests','signals'],3],indicated:[['showed','suggested','signaled'],3],
-    highlight:[['show','emphasize','underscore'],3],highlights:[['shows','emphasizes','underscores'],3],highlighted:[['showed','emphasized','underscored'],3],enhance:[['improve','strengthen'],3],enhances:[['improves','strengthens'],3],enhanced:[['improved','strengthened'],3],optimize:[['improve','refine'],3],optimizes:[['improves','refines'],3],
-    leverage:[['use','draw on'],3],leverages:[['uses','draws on'],3],encompass:[['include','cover'],3],encompasses:[['includes','covers'],3],comprise:[['include','contain'],3],comprises:[['includes','contains'],3],enable:[['allow','let'],3],enables:[['allows','lets'],3],assist:[['help','aid'],3],assists:[['helps','aids'],3],
-    obtain:[['get','gain','acquire'],3],obtains:[['gets','gains','acquires'],3],require:[['need','demand'],2],requires:[['needs','demands'],2],commence:[['begin','start'],3],commenced:[['began','started'],3],terminate:[['end','stop'],3],terminated:[['ended','stopped'],3],purchase:[['buy','acquire'],3],purchases:[['buys','acquires'],3],
-    provide:[['give','offer','supply'],2],provides:[['gives','offers','supplies'],2],provided:[['gave','offered','supplied'],2],receive:[['get','accept'],2],receives:[['gets','accepts'],2],individuals:[['people','persons'],3],methodology:[['method','approach'],3],methodologies:[['methods','approaches'],3],functionality:[['function','capability'],3],functionalities:[['functions','capabilities'],3],
-    objective:[['goal','aim'],3],objectives:[['goals','aims'],3],perspective:[['view','standpoint'],3],perspectives:[['views','standpoints'],3],aspect:[['part','feature','element'],2],aspects:[['parts','features','elements'],2],factor:[['element','consideration'],2],factors:[['elements','considerations'],2],impact:[['effect','influence'],2],impacts:[['effects','influences'],2],
-    implement:[['apply','put in place','carry out'],3],implements:[['applies','puts in place','carries out'],3],implementation:[['use','adoption','execution'],2],address:[['handle','tackle','deal with'],2],addresses:[['handles','tackles','deals with'],2],ensure:[['make sure','secure'],2],ensures:[['makes sure','secures'],2],maintain:[['keep','preserve'],3],maintains:[['keeps','preserves'],3],
-    sufficient:[['enough','adequate'],3],additional:[['extra','further'],3],primarily:[['mainly','chiefly'],3],particularly:[['especially','notably'],3],generally:[['usually','broadly'],2],typically:[['usually','normally'],3],frequently:[['often','regularly'],3],occasionally:[['sometimes','now and then'],3],ultimately:[['eventually','in the end'],2],currently:[['now','at present'],3],previously:[['earlier','before'],3],subsequently:[['later','afterward'],3],potentially:[['possibly','perhaps'],3],
-    clearly:[['plainly','obviously'],2],extremely:[['very','exceptionally'],2],significantly:[['greatly','substantially','meaningfully'],2],increasingly:[['more and more','progressively'],3],fundamentally:[['basically','at heart'],2],effectively:[['in practice','successfully'],2],specifically:[['particularly','in particular'],2],
-    explore:[['examine','consider','investigate'],2],explores:[['examines','considers','investigates'],2],examining:[['studying','considering','looking at'],2],consider:[['weigh','examine','think about'],2],considering:[['weighing','examining','thinking about'],2],understand:[['grasp','see','make sense of'],2],understanding:[['grasp','knowledge','sense'],2],
-    challenge:[['problem','difficulty','test'],2],challenges:[['problems','difficulties','tests'],2],opportunity:[['chance','opening','possibility'],2],opportunities:[['chances','openings','possibilities'],2],solution:[['answer','approach','remedy'],2],solutions:[['answers','approaches','remedies'],2],approach:[['method','way','strategy'],2],approaches:[['methods','ways','strategies'],2],
-    also:[['too','as well'],1],often:[['frequently','regularly'],1],usually:[['typically','normally'],1],sometimes:[['occasionally','at times'],1],many:[['numerous','a great many'],1],several:[['a number of','multiple'],1],different:[['distinct','varied'],1],main:[['primary','central'],1],clear:[['plain','obvious'],1],strong:[['powerful','solid'],1],helpful:[['useful','valuable'],1],useful:[['helpful','valuable'],1],possible:[['feasible','plausible'],1],likely:[['probable','expected'],1],
-    change:[['alter','revise'],1],changes:[['alters','revises'],1],changed:[['altered','revised'],1],create:[['make','produce'],1],creates:[['makes','produces'],1],created:[['made','produced'],1],improve:[['refine','strengthen'],1],improves:[['refines','strengthens'],1],improved:[['refined','strengthened'],1],
-    result:[['outcome','effect'],1],results:[['outcomes','effects'],1],idea:[['concept','notion'],1],ideas:[['concepts','notions'],1],reason:[['cause','basis'],1],reasons:[['causes','grounds'],1],method:[['approach','way'],1],methods:[['approaches','ways'],1],problem:[['issue','difficulty'],1],problems:[['issues','difficulties'],1],people:[['individuals','people'],1]
-  };
-
-  const SAMPLE=`Artificial intelligence has the ability to transform a wide range of everyday tasks. However, it is important to note that the technology is most valuable when individuals use it to enhance their own judgment rather than replace it. In order to get better results, users should provide sufficient context, evaluate the response carefully, and maintain control over the final product. This approach enables people to utilize AI efficiently while ensuring that their own perspective remains central.`;
-  const countWords=t=>(t.trim().match(/\b[\p{L}\p{N}'’_-]+\b/gu)||[]).length;
-  const esc=s=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const reEsc=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-  const overlap=(a,b)=>a.start<b.end&&b.start<a.end;
-  function sameCase(original,replacement){if(!original||!replacement)return replacement;if(original.toUpperCase()===original&&/[A-Z]/.test(original))return replacement.toUpperCase();if(original[0]===original[0].toUpperCase())return replacement[0].toUpperCase()+replacement.slice(1);return replacement}
-  function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
-
-  function findCandidates(text){
-    const minQ=LEVEL[level].quality, pool=[];
-    for(const [phrase,alts,q] of PHRASES){if(q<minQ)continue;const re=new RegExp(`\\b${reEsc(phrase)}\\b`,'gi');let m;while((m=re.exec(text))){pool.push({start:m.index,end:m.index+m[0].length,original:m[0],alts:alts.map(a=>sameCase(m[0],a)),q,type:'phrase'})}}
-    const wr=/\b[\p{L}]+\b/gu;let m;while((m=wr.exec(text))){const entry=WORDS[m[0].toLowerCase()];if(!entry||entry[1]<minQ)continue;pool.push({start:m.index,end:m.index+m[0].length,original:m[0],alts:entry[0].map(a=>sameCase(m[0],a)),q:entry[1],type:'word'})}
-    pool.sort((a,b)=>b.q-a.q||(b.end-b.start)-(a.end-a.start)||a.start-b.start);
-    const clean=[];for(const c of pool){if(!clean.some(x=>overlap(c,x)))clean.push(c)}
-    clean.sort((a,b)=>a.start-b.start);
-    if(!clean.length)return [];
-    const ratio=LEVEL[level].ratio,target=Math.max(1,Math.ceil(clean.length*ratio));
-    if(target>=clean.length)return clean;
-    const ranked=clean.map((c,i)=>({c,i,h:hash(`${c.original}|${c.start}|${level}`)})).sort((a,b)=>a.h-b.h).slice(0,target).map(x=>x.c).sort((a,b)=>a.start-b.start);
-    return ranked;
-  }
-
-  function prepare(){
-    const text=source.value;if(!text.trim()){say('Add some text first.');source.focus();return}
-    leaveManual(false);snapshot=text;pass=0;candidates=findCandidates(text);
-    candidates.forEach((c,i)=>{c.id=i;c.choice=hash(`${c.original}|${c.start}|${pass}`)%c.alts.length;c.reverted=false});
-    render();enable(true);
-    if(!candidates.length){changeCount.textContent='No strong local edits found';say(level==='thorough'?'No strong alternatives found in this passage.':'No edits at this level. Try Thorough.')} else say(`${candidates.length} edit${candidates.length===1?'':'s'} offered.`)
-  }
-
-  function render(){
-    if(!snapshot){output.className='output empty';output.textContent='Your working copy will appear here.';stats();return}
-    let html='',cursor=0;for(const c of candidates){html+=esc(snapshot.slice(cursor,c.start));const val=c.reverted?c.original:c.alts[c.choice];html+=`<button class="edit${c.reverted?' reverted':''}" data-id="${c.id}" title="Click for another choice. Shift-click to restore.">${esc(val)}</button>`;cursor=c.end}html+=esc(snapshot.slice(cursor));output.innerHTML=html;output.className='output';stats()
-  }
-  function flat(){if(manualMode)return manual.value;if(!snapshot)return '';let out='',cursor=0;for(const c of candidates){out+=snapshot.slice(cursor,c.start)+(c.reverted?c.original:c.alts[c.choice]);cursor=c.end}return out+snapshot.slice(cursor)}
-  function stats(){const text=flat(),n=countWords(text),active=candidates.filter(c=>!c.reverted),tw=active.reduce((s,c)=>s+Math.max(1,countWords(c.original)),0);words.textContent=n.toLocaleString();changes.textContent=active.length.toLocaleString();touched.textContent=n?`${Math.min(100,Math.round(tw/n*100))}%`:'0%';if(snapshot&&!manualMode)changeCount.textContent=active.length?`${active.length} suggested edit${active.length===1?'':'s'}`:'No active edits'}
-  function sourceStats(){const n=countWords(source.value);sourceCount.textContent=`${n.toLocaleString()} word${n===1?'':'s'}`}
-  function enable(on){another.disabled=!on;restore.disabled=!on;copy.disabled=!on;manualBtn.disabled=!on}
-  function anotherPass(){if(!snapshot)return;if(manualMode)leaveManual(true);pass++;candidates.forEach(c=>{if(!c.reverted&&c.alts.length>1)c.choice=(c.choice+1)%c.alts.length});render();say('New alternatives shown.')}
-  function restoreAll(){if(manualMode)leaveManual(true);candidates.forEach(c=>c.reverted=true);render()}
-  function enterManual(){if(!snapshot||manualMode)return;manual.value=flat();output.style.display='none';manual.style.display='block';manualMode=true;manualBtn.textContent='Done editing';manual.focus();stats()}
-  function leaveManual(commit){if(!manualMode)return;if(commit){snapshot=manual.value;candidates=[]}manual.style.display='none';output.style.display='block';manualMode=false;manualBtn.textContent='Edit directly';if(commit){render();changeCount.textContent='Manual working copy'}}
-  async function copyText(){const text=flat();if(!text)return;try{await navigator.clipboard.writeText(text)}catch{const t=document.createElement('textarea');t.value=text;document.body.appendChild(t);t.select();document.execCommand('copy');t.remove()}say('Copied.')}
-  function say(msg){toast.textContent=msg;toast.classList.add('show');clearTimeout(say.t);say.t=setTimeout(()=>toast.classList.remove('show'),1700)}
-
-  document.querySelectorAll('[data-level]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('[data-level]').forEach(x=>x.classList.remove('active'));b.classList.add('active');level=b.dataset.level;if(snapshot&&source.value===snapshot)prepare()}));
-  output.addEventListener('click',e=>{const b=e.target.closest('.edit');if(!b)return;const c=candidates[Number(b.dataset.id)];if(!c)return;if(e.shiftKey)c.reverted=true;else if(c.reverted)c.reverted=false;else if(c.alts.length>1)c.choice=(c.choice+1)%c.alts.length;else c.reverted=true;render()});
-  source.addEventListener('input',()=>{sourceStats();if(snapshot&&source.value!==snapshot){snapshot='';candidates=[];manualMode=false;output.style.display='block';manual.style.display='none';output.className='output empty';output.textContent='Text changed. Offer edits when you are ready.';enable(false);stats();changeCount.textContent='No edits yet'}});
-  manual.addEventListener('input',stats);offer.addEventListener('click',prepare);another.addEventListener('click',anotherPass);restore.addEventListener('click',restoreAll);copy.addEventListener('click',copyText);manualBtn.addEventListener('click',()=>manualMode?leaveManual(true):enterManual());
-  sample.addEventListener('click',()=>{source.value=SAMPLE;sourceStats();source.focus();say('Example loaded. Tap Offer edits.')});
-  clear.addEventListener('click',()=>{source.value='';snapshot='';candidates=[];manualMode=false;output.style.display='block';manual.style.display='none';output.className='output empty';output.textContent='Your working copy will appear here.';enable(false);sourceStats();stats();changeCount.textContent='No edits yet';source.focus()});
-  source.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='Enter')prepare()});
-})();
-</script>
+  <script src="phrases.js"></script>
+  <script src="words.js"></script>
+  <script src="patterns.js"></script>
+  <script src="engine.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
