@@ -1,0 +1,78 @@
+name: Own Words entropy selector A/B
+
+on:
+  push:
+    branches:
+      - agent/own-words-context-disruption
+    paths:
+      - '.github/workflows/own-words-entropy-selection.yml'
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+      HF_HUB_DISABLE_TELEMETRY: '1'
+      TOKENIZERS_PARALLELISM: 'false'
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Validate experiment
+        run: |
+          node --check own-words/entropy-experiment/runner.mjs
+          python -m py_compile own-words/entropy-experiment/surprisal_map.py own-words/entropy-experiment/analyze.py
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install transformers==4.46.3 matplotlib==3.9.2
+
+      - name: Reuse benchmark corpus
+        run: |
+          mkdir -p /tmp/entropy-source own-words/entropy-experiment/results
+          gh run download 31538567154 --repo "$GITHUB_REPOSITORY" --name own-words-synthid-benchmark --dir /tmp/entropy-source
+
+      - name: Build Pythia 14M surprisal map
+        run: |
+          python own-words/entropy-experiment/surprisal_map.py \
+            --generated /tmp/entropy-source/generated.json \
+            --output own-words/entropy-experiment/results/surprisal.json \
+            --model EleutherAI/pythia-14m
+
+      - name: Create fixed-four rewrites
+        run: |
+          node own-words/entropy-experiment/runner.mjs \
+            /tmp/entropy-source/generated.json \
+            own-words/entropy-experiment/results/surprisal.json \
+            own-words/entropy-experiment/results/rewrites.json
+
+      - name: Score A/B
+        run: |
+          python own-words/entropy-experiment/analyze.py \
+            --generated /tmp/entropy-source/generated.json \
+            --rewrites own-words/entropy-experiment/results/rewrites.json \
+            --output-dir own-words/entropy-experiment/results
+
+      - name: Upload A/B result
+        uses: actions/upload-artifact@v4
+        with:
+          name: own-words-entropy-selector-ab
+          path: own-words/entropy-experiment/results
+          if-no-files-found: error

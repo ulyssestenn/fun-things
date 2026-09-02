@@ -1,0 +1,131 @@
+name: Own Words SynthID benchmark
+
+on:
+  push:
+    branches:
+      - agent/own-words-context-disruption
+    paths:
+      - 'own-words/engine.js'
+      - 'own-words/app.js'
+      - 'own-words/metrics.js'
+      - 'own-words/phrases.js'
+      - 'own-words/connectives.js'
+      - 'own-words/compressions.js'
+      - 'own-words/words*.js'
+      - 'own-words/patterns.js'
+      - 'own-words/syntax.js'
+      - 'own-words/corpus-*.js'
+      - 'own-words/research/synthid_benchmark.py'
+      - 'own-words/research/synthid_rewrite_runner.mjs'
+      - 'own-words/research/placement_analysis.py'
+      - 'own-words/research/transform_efficiency.py'
+      - 'own-words/research/entropy_efficiency.py'
+      - '.github/workflows/own-words-synthid-benchmark.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      HF_HUB_DISABLE_TELEMETRY: '1'
+      TOKENIZERS_PARALLELISM: 'false'
+    steps:
+      - name: Check out benchmark branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Validate research code
+        run: |
+          node --check own-words/connectives.js
+          node --check own-words/compressions.js
+          node --check own-words/syntax.js
+          node --check own-words/engine.js
+          node --check own-words/app.js
+          node --check own-words/research/synthid_rewrite_runner.mjs
+          python -m py_compile own-words/research/synthid_benchmark.py own-words/research/placement_analysis.py own-words/research/transform_efficiency.py own-words/research/entropy_efficiency.py
+
+      - name: Install benchmark dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install transformers==4.46.3 matplotlib==3.9.2
+
+      - name: Generate paired reference-watermark corpus
+        run: |
+          mkdir -p own-words/research/results
+          python own-words/research/synthid_benchmark.py generate \
+            --model HuggingFaceTB/SmolLM2-135M-Instruct \
+            --limit 16 \
+            --min-new-tokens 140 \
+            --max-new-tokens 160 \
+            --output own-words/research/results/generated.json
+
+      - name: Run Own Words selectors and controls
+        run: |
+          git show origin/main:own-words/engine.js > /tmp/own-words-engine-main.js
+          node own-words/research/synthid_rewrite_runner.mjs \
+            own-words/research/results/generated.json \
+            own-words/research/results/rewrites.json \
+            /tmp/own-words-engine-main.js \
+            own-words/engine.js
+
+      - name: Score detector signal and semantic preservation
+        run: |
+          python own-words/research/synthid_benchmark.py analyze \
+            --generated own-words/research/results/generated.json \
+            --rewrites own-words/research/results/rewrites.json \
+            --output-dir own-words/research/results
+
+      - name: Analyze single-edit transform efficiency
+        run: |
+          python own-words/research/transform_efficiency.py \
+            --rewrites own-words/research/results/rewrites.json \
+            --csv own-words/research/results/synthid_benchmark_rows.csv \
+            --output-dir own-words/research/results
+
+      - name: Analyze generator-model entropy targeting
+        run: |
+          python own-words/research/entropy_efficiency.py \
+            --generated own-words/research/results/generated.json \
+            --rewrites own-words/research/results/rewrites.json \
+            --csv own-words/research/results/synthid_benchmark_rows.csv \
+            --output-dir own-words/research/results
+
+      - name: Analyze cross-model entropy targeting
+        run: |
+          python own-words/research/entropy_efficiency.py \
+            --generated own-words/research/results/generated.json \
+            --rewrites own-words/research/results/rewrites.json \
+            --csv own-words/research/results/synthid_benchmark_rows.csv \
+            --output-dir own-words/research/results \
+            --surrogate-model distilgpt2 \
+            --label distilgpt2
+
+      - name: Analyze fixed-edit placement controls
+        run: |
+          python own-words/research/placement_analysis.py \
+            --csv own-words/research/results/synthid_benchmark_rows.csv \
+            --output-dir own-words/research/results
+
+      - name: Upload benchmark results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: own-words-synthid-benchmark
+          path: own-words/research/results
+          if-no-files-found: warn

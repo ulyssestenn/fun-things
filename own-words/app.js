@@ -1,18 +1,27 @@
 (() => {
   const $ = id => document.getElementById(id);
-  const source=$('source'), output=$('output'), manual=$('manual'), offer=$('offer'), another=$('another'), restore=$('restore'), copy=$('copy'), manualBtn=$('manualBtn'), sample=$('sample'), clear=$('clear');
+  const source=$('source'), output=$('output'), manual=$('manual'), offer=$('offer'), another=$('another'), restore=$('restore'), guide=$('guide'), copy=$('copy'), manualBtn=$('manualBtn'), sample=$('sample'), clear=$('clear');
   const sourceCount=$('sourceCount'), limitState=$('limitState'), changeCount=$('changeCount'), words=$('words'), changes=$('changes'), touched=$('touched'), toast=$('toast');
   const depth=$('depth'), depthLabel=$('depthLabel'), targetNote=$('targetNote'), targetState=$('targetState');
   const calcOriginalTokens=$('calcOriginalTokens'), calcRevisedTokens=$('calcRevisedTokens'), calcTurnover=$('calcTurnover'), calc3=$('calc3'), calc5=$('calc5'), calcCoverage=$('calcCoverage'), calcStructures=$('calcStructures'), calcMethod=$('calcMethod'), calcFormula=$('calcFormula');
   const calcSurface=$('calcSurface'), calcFunction=$('calcFunction'), calcSentence=$('calcSentence'), calcPunctuation=$('calcPunctuation'), calcPronoun=$('calcPronoun'), calcShort=$('calcShort'), calcDash=$('calcDash'), calcColon=$('calcColon'), calcSurfaceFormula=$('calcSurfaceFormula');
   const calcFamilies=$('calcFamilies'), calcFamilyList=$('calcFamilyList');
-  const {findCandidates,countWords,esc,hash}=window.OwnWordsEngine;
+  const {findCandidates,countWords,esc}=window.OwnWordsEngine;
   const metrics=window.OwnWordsMetrics;
   const limits=window.OwnWordsLimits;
   const grammar=window.OwnWordsGrammar;
+  const coverageCoach=window.OwnWordsCoverageCoach;
   const L=limits.LIMITS;
   let level='balanced', snapshot='', baseline='', candidates=[], manualMode=false, pass=0;
+  let guideTargets=[], guideIndex=0, guideActive=false;
+  const GUIDE_GOALS={light:0.50,balanced:0.65,thorough:0.75};
+  const GUIDE_MAX_TARGETS=12;
   const SAMPLE=`Artificial intelligence has the ability to transform a wide range of everyday tasks. However, it is important to note that the technology is most valuable when individuals use it to enhance their own judgment rather than replace it. In order to get better results, users should provide sufficient context, evaluate the response carefully, and maintain control over the final product. This approach enables people to utilize AI efficiently while ensuring that their own perspective remains central.`;
+
+  function resetGuide(){
+    guideTargets=[];guideIndex=0;guideActive=false;
+    if(guide){guide.textContent='Guide my edits';guide.disabled=!snapshot||manualMode||!coverageCoach}
+  }
 
   function prepare(){
     const text=source.value;
@@ -20,8 +29,8 @@
     const status=limits.inspect(text);
     if(!status.ok){say(limits.message(status));source.focus();return}
     leaveManual(false);baseline=text;snapshot=text;pass=0;candidates=findCandidates(text,level);
-    candidates.forEach((c,i)=>{c.id=i;c.choice=hash(`${c.original}|${c.start}|${pass}`)%c.alts.length;c.reverted=false});
-    render();enable(true);
+    candidates.forEach((c,i)=>{c.id=i;c.choice=0;c.reverted=false});
+    render();enable(true);resetGuide();
     if(!candidates.length){changeCount.textContent='No strong local edits found';say(level==='thorough'?'No safe alternatives found in this passage.':'No edits at this level. Try Thorough.')} else say(`${candidates.length} edit${candidates.length===1?'':'s'} offered.`)
   }
 
@@ -37,9 +46,58 @@
     html+=esc(snapshot.slice(cursor));output.innerHTML=html;output.className='output';stats();
   }
 
-  function flat(){if(manualMode)return manual.value;if(!snapshot)return '';let out='',cursor=0;for(const c of candidates){out+=snapshot.slice(cursor,c.start)+(c.reverted?c.original:c.alts[c.choice]);cursor=c.end}return out+snapshot.slice(cursor)}
+  function candidateValue(c){return c.reverted?c.original:c.alts[c.choice]}
+  function flat(){if(manualMode)return manual.value;if(!snapshot)return '';let out='',cursor=0;for(const c of candidates){out+=snapshot.slice(cursor,c.start)+candidateValue(c);cursor=c.end}return out+snapshot.slice(cursor)}
   function pct(value){return `${Math.round(value)}%`}
   function rate(value){return Number.isFinite(value)?value.toFixed(1):'0.0'}
+
+  function sourceOffsetToWorking(offset){
+    let delta=0;
+    for(const c of candidates){
+      if(c.end<=offset){delta+=candidateValue(c).length-(c.end-c.start);continue}
+      if(c.start>=offset)break;
+    }
+    return Math.max(0,offset+delta);
+  }
+
+  function buildGuideTargets(){
+    if(!coverageCoach||!snapshot)return [];
+    const plan=coverageCoach.selectTargets(snapshot,candidates,{
+      goal:GUIDE_GOALS[level]||GUIDE_GOALS.balanced,
+      maxTargets:GUIDE_MAX_TARGETS
+    });
+    return plan.targets.map(target=>({
+      ...target,
+      workingStart:sourceOffsetToWorking(target.start),
+      workingEnd:sourceOffsetToWorking(target.end)
+    })).sort((a,b)=>b.workingStart-a.workingStart);
+  }
+
+  function showGuideTarget(){
+    if(!guideActive||!manualMode)return;
+    if(guideIndex>=guideTargets.length){
+      guideActive=false;guide.textContent='Guide my edits';guide.disabled=true;
+      changeCount.textContent='Guided targets complete';
+      say('Guided targets complete. Finish editing when you are ready.');
+      manual.focus();return;
+    }
+    const target=guideTargets[guideIndex];
+    const start=Math.min(target.workingStart,manual.value.length);
+    const end=Math.min(Math.max(start,target.workingEnd),manual.value.length);
+    manual.focus();manual.setSelectionRange(start,end);manual.scrollTop=Math.max(0,manual.scrollTop);
+    guide.textContent='Next target';
+    changeCount.textContent=`Guided edit ${guideIndex+1} of ${guideTargets.length}`;
+    say(`Rewrite this word or nearby phrase in your own words · ${guideIndex+1}/${guideTargets.length}`);
+  }
+
+  function startGuide(){
+    if(!snapshot||!coverageCoach)return;
+    if(guideActive){guideIndex++;showGuideTarget();return}
+    if(manualMode){say('Finish the current direct edit first.');return}
+    guideTargets=buildGuideTargets();guideIndex=0;
+    if(!guideTargets.length){say('No additional high-value edit regions found.');guide.disabled=true;return}
+    enterManual(true);guideActive=true;guide.disabled=false;showGuideTarget();
+  }
 
   function stats(){
     const text=flat();
@@ -119,10 +177,10 @@
     offer.disabled=false;return status;
   }
 
-  function enable(on){another.disabled=!on;restore.disabled=!on;copy.disabled=!on;manualBtn.disabled=!on}
-  function anotherPass(){if(!snapshot)return;if(manualMode&&!leaveManual(true))return;pass++;candidates.forEach(c=>{if(!c.reverted&&c.alts.length>1)c.choice=(c.choice+1)%c.alts.length});render();say('New alternatives shown.')}
-  function restoreAll(){if(manualMode&&!leaveManual(true))return;candidates.forEach(c=>c.reverted=true);render()}
-  function enterManual(){if(!snapshot||manualMode)return;manual.value=flat();output.style.display='none';manual.style.display='block';manualMode=true;manualBtn.textContent='Done editing';manual.focus();stats()}
+  function enable(on){another.disabled=!on;restore.disabled=!on;copy.disabled=!on;manualBtn.disabled=!on;if(guide)guide.disabled=!on||!coverageCoach}
+  function anotherPass(){if(!snapshot)return;if(manualMode&&!leaveManual(true))return;pass++;candidates.forEach(c=>{if(!c.reverted&&c.alts.length>1)c.choice=(c.choice+1)%c.alts.length});render();resetGuide();say('New alternatives shown.')}
+  function restoreAll(){if(manualMode&&!leaveManual(true))return;candidates.forEach(c=>c.reverted=true);render();resetGuide()}
+  function enterManual(fromGuide=false){if(!snapshot||manualMode)return;manual.value=flat();output.style.display='none';manual.style.display='block';manualMode=true;manualBtn.textContent='Done editing';if(guide&&!fromGuide)guide.disabled=true;manual.focus();stats()}
 
   function leaveManual(commit){
     if(!manualMode)return true;
@@ -131,13 +189,13 @@
       if(!status.ok){say(limits.message(status));manual.focus();return false}
       snapshot=manual.value;candidates=[];
     }
-    manual.style.display='none';output.style.display='block';manualMode=false;manualBtn.textContent='Edit directly';
-    if(commit){render();changeCount.textContent='Manual working copy';another.disabled=true;restore.disabled=true;copy.disabled=false;manualBtn.disabled=false}
+    manual.style.display='none';output.style.display='block';manualMode=false;manualBtn.textContent='Edit directly';resetGuide();
+    if(commit){render();changeCount.textContent='Manual working copy';another.disabled=true;restore.disabled=true;copy.disabled=false;manualBtn.disabled=false;if(guide)guide.disabled=true}
     return true;
   }
 
   async function copyText(){const text=flat();if(!text)return;try{await navigator.clipboard.writeText(text)}catch{const t=document.createElement('textarea');t.value=text;document.body.appendChild(t);t.select();document.execCommand('copy');t.remove()}say('Copied.')}
-  function say(msg){toast.textContent=msg;toast.classList.add('show');clearTimeout(say.t);say.t=setTimeout(()=>toast.classList.remove('show'),2200)}
+  function say(msg){toast.textContent=msg;toast.classList.add('show');clearTimeout(say.t);say.t=setTimeout(()=>toast.classList.remove('show'),2600)}
 
   function guardedInsertion(element,inserted,event){
     const next=limits.prospectiveValue(element,inserted);
@@ -164,21 +222,21 @@
   }
 
   function resetWorking(message='Your working copy will appear here.'){
-    baseline='';snapshot='';candidates=[];manualMode=false;output.style.display='block';manual.style.display='none';output.className='output empty';output.textContent=message;enable(false);stats();changeCount.textContent='No edits yet';
+    baseline='';snapshot='';candidates=[];manualMode=false;output.style.display='block';manual.style.display='none';output.className='output empty';output.textContent=message;resetGuide();enable(false);stats();changeCount.textContent='No edits yet';
   }
 
   document.querySelectorAll('[data-level]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('[data-level]').forEach(x=>x.classList.remove('active'));b.classList.add('active');level=b.dataset.level;if(baseline&&source.value===baseline)prepare();else updateDepth(flat())}));
-  output.addEventListener('click',e=>{const b=e.target.closest('.edit');if(!b)return;const c=candidates[Number(b.dataset.id)];if(!c)return;if(e.shiftKey)c.reverted=true;else if(c.reverted)c.reverted=false;else if(c.alts.length>1)c.choice=(c.choice+1)%c.alts.length;else c.reverted=true;render()});
+  output.addEventListener('click',e=>{const b=e.target.closest('.edit');if(!b)return;const c=candidates[Number(b.dataset.id)];if(!c)return;if(e.shiftKey)c.reverted=true;else if(c.reverted)c.reverted=false;else if(c.alts.length>1)c.choice=(c.choice+1)%c.alts.length;else c.reverted=true;render();resetGuide()});
 
   source.addEventListener('input',()=>{
     const status=sourceStats();
     if(baseline&&source.value!==baseline)resetWorking(status.ok?'Text changed. Offer edits when you are ready.':'Passage is over the text limit. Remove some text to continue.');
   });
   manual.addEventListener('input',stats);
-  offer.addEventListener('click',prepare);another.addEventListener('click',anotherPass);restore.addEventListener('click',restoreAll);copy.addEventListener('click',copyText);manualBtn.addEventListener('click',()=>manualMode?leaveManual(true):enterManual());
+  offer.addEventListener('click',prepare);another.addEventListener('click',anotherPass);restore.addEventListener('click',restoreAll);guide.addEventListener('click',startGuide);copy.addEventListener('click',copyText);manualBtn.addEventListener('click',()=>manualMode?leaveManual(true):enterManual(false));
   sample.addEventListener('click',()=>{source.value=SAMPLE;resetWorking('Example loaded. Offer edits when you are ready.');sourceStats();source.focus();say('Example loaded. Tap Offer edits.')});
   clear.addEventListener('click',()=>{source.value='';resetWorking();sourceStats();source.focus()});
   source.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='Enter')prepare()});
 
-  installInputGuards(source);installInputGuards(manual);sourceStats();updateDepth('');
+  installInputGuards(source);installInputGuards(manual);sourceStats();updateDepth('');resetGuide();
 })();
